@@ -1,6 +1,13 @@
 # LLM News Generation
 
-## Simple Intrusction 
+## My env
+```
+Mac M1 Pro - 16GB RAM (CPU only)
+Python 3.10.18
+package: /requiremensts.txt
+```
+
+## Git Intrusction 
 
 > How to modify the code?
 
@@ -12,7 +19,8 @@
 When push:
 
 ```bash
-git submodule add https://github.com/Rudrabha/Wav2Lip # if needed (BTW, I have set .gitmodules)
+# if needed (BTW, I have set .gitmodules)
+git submodule add https://github.com/Rudrabha/Wav2Lip 
 ```
 
 ## Quick Start - [LINK](/quick_start.md)
@@ -61,5 +69,5 @@ FEAT:
 ## MIT License  
 
 This project is licensed under the **MIT License**.  
-For details, see [LICENSE](LICENSE).  
+For details, see [LICENSE](/license).  
 
