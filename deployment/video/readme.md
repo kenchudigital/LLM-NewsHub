@@ -1,0 +1,1 @@
+move face.mp4 to deployment/Wav2Lip/samples/face.mp4

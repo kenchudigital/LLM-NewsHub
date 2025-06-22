@@ -1,0 +1,113 @@
+# FILE
+**.DS_Store
+**.env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Wav2Lip
+deployment/Wav2Lip/*
+# 自己 clone，自己改，自己 config，如果要用！
+# git submodule add https://github.com/Rudrabha/Wav2Lip
+
+# DATASET FROM EXTERNAL SOURCES
+classifier/fake_news/dataset/Fake.csv
+classifier/fake_news/dataset/True.csv
+
+# scraper
+data/raw/fundus/*
+data/raw/reddit/*
+temp_comments.csv
+temp_posts.csv
+data/raw/trust_score/*
+
+# category classifier
+classifier/category/dataset/BBC_News_Train.csv
+classifier/category/dataset/BBC_News_Test.csv
+classifier/category/dataset/BBC_News_Sample_Solution.csv
+classifier/category/experiments/results.json
+classifier/category/models/best_models/knn/*
+classifier/category/models/best_models/svc/*
+classifier/category/models/best_models/best_model.joblib
+classifier/category/models/best_models/best_model.json
+classifier/category/results/analysis/*
+classifier/category/results/knn/predictions/*
+classifier/category/results/svc/predictions/*
+
+# fake news classifier
+classifier/fake_news/dataset/feature_cache/*
+classifier/fake_news/experiments/results.json
+classifier/fake_news/models/results/*
+classifier/fake_news/models/best_models/*
+
+# card
+data/card/event_card/*
+data/card/statement_card/comments/*
+data/card/statement_card/posts/*
+
+# group
+data/group/*
+data/output/article/*
+
+# Eval
+data/eval/*
+
+# Output
+data/output/article/*
+data/output/image/*
+data/output/resources/*
+data/output/audio/*
+data/output/resource/*
+
+# UI
+apps/static/resource/*
+apps/static/images/*
+apps/static/audio/*
+apps/static/video/*
+apps/static/graph/*
+apps/static/articles/*
+apps/static/resources/*
+
+
+
+# Node.js / React
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# React build output
+apps/frontend/build/
+apps/frontend/dist/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# python
+**/__pycache__
+__pycache__/
+*.py[cod]
+*$py.class
+*.so

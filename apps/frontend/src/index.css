@@ -1,0 +1,619 @@
+* {
+    scroll-behavior: smooth;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: linear-gradient(135deg,
+            #000000 0%,
+            #0a0a0a 15%,
+            #1a1a1a 30%,
+            #0d0d0d 50%,
+            #1a1a1a 70%,
+            #0a0a0a 85%,
+            #000000 100%);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    /* For iOS Safari */
+    transition: all 0.3s ease;
+    color: #ffffff;
+    overflow-x: hidden;
+    position: relative;
+    /* Ensure background extends beyond viewport */
+    background-attachment: fixed;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+#root {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    /* For iOS Safari */
+    position: relative;
+    z-index: 1;
+    /* Ensure root element extends beyond viewport */
+    background: inherit;
+}
+
+/* Add a wrapper to ensure background extends */
+html::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: inherit;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Dark cyberpunk body background effects */
+body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    width: 200%;
+    height: 200%;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(0, 234, 255, 0.02) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 106, 0, 0.015) 0%, transparent 50%),
+        radial-gradient(circle at 40% 60%, rgba(0, 100, 200, 0.01) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+    transform: rotate(0deg);
+    animation: backgroundRotate 60s linear infinite;
+}
+
+@keyframes backgroundRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    width: 200%;
+    height: 200%;
+    background-image:
+        repeating-linear-gradient(0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 234, 255, 0.003) 2px,
+            rgba(0, 234, 255, 0.003) 4px);
+    pointer-events: none;
+    z-index: 0;
+    transform: rotate(0deg);
+    animation: backgroundRotate 120s linear infinite reverse;
+}
+
+/* Override MUI Container backgrounds to dark */
+.MuiContainer-root,
+.MuiContainer-maxWidthXl,
+.css-ln4o4q-MuiContainer-root,
+.css-uy3s49-MuiContainer-root {
+    background: linear-gradient(135deg,
+            rgba(0, 0, 0, 0.95) 0%,
+            rgba(5, 5, 15, 0.98) 20%,
+            rgba(8, 8, 20, 0.96) 40%,
+            rgba(3, 3, 12, 0.97) 60%,
+            rgba(0, 0, 0, 0.98) 80%,
+            rgba(0, 0, 0, 1) 100%) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Ensure all containers have dark theme */
+.MuiContainer-root:not(.header-container) {
+    background: transparent !important;
+}
+
+/* Specifically target the main content containers */
+.MuiContainer-maxWidthXl {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Override any white backgrounds in the app */
+.MuiPaper-root {
+    background: linear-gradient(135deg,
+            rgba(13, 13, 13, 0.95) 0%,
+            rgba(26, 26, 46, 0.9) 50%,
+            rgba(22, 33, 62, 0.85) 100%) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Ensure all Material-UI components use dark theme */
+.MuiTypography-root {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.MuiInputBase-root {
+    background: rgba(13, 13, 13, 0.6) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.MuiOutlinedInput-root {
+    background: rgba(13, 13, 13, 0.6) !important;
+}
+
+.MuiTab-root {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.MuiTab-root.Mui-selected {
+    color: #00eaff !important;
+}
+
+code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+        monospace;
+}
+
+/* Custom styles for article page */
+.source-ref {
+    color: #00eaff !important;
+    text-decoration: none !important;
+    font-weight: 600;
+    padding: 2px 6px;
+    margin: 0 2px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    background: rgba(0, 234, 255, 0.1);
+}
+
+.source-ref-number {
+    color: #00eaff !important;
+    text-decoration: none !important;
+    font-weight: 600;
+    padding: 2px 6px;
+    margin: 0 2px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 234, 255, 0.3);
+    display: inline-block;
+    cursor: default;
+    background: rgba(0, 234, 255, 0.1);
+    font-size: 0.9em;
+}
+
+.source-ref::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 106, 0, 0.4), transparent);
+    transition: left 0.5s;
+}
+
+.source-ref:hover {
+    background: linear-gradient(90deg, #00eaff, #ff6a00) !important;
+    color: white !important;
+    border-color: #00eaff;
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 234, 255, 0.4);
+}
+
+.source-ref:hover::before {
+    left: 100%;
+}
+
+.source-ref:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Smooth scrolling for the entire page */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #2c5364;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #00eaff, #ff6a00);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ff6a00, #00eaff);
+    transform: scale(1.1);
+}
+
+/* Loading animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* Responsive text selection */
+::selection {
+    background: rgba(0, 234, 255, 0.3) !important;
+    color: inherit !important;
+}
+
+::-moz-selection {
+    background: rgba(0, 234, 255, 0.3) !important;
+    color: inherit !important;
+}
+
+/* Keyframe Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 40px, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translate3d(100px, 0, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -468px 0;
+    }
+
+    100% {
+        background-position: 468px 0;
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px rgba(0, 234, 255, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(0, 234, 255, 0.8), 0 0 30px rgba(255, 106, 0, 0.6);
+    }
+}
+
+/* Enhanced Card Animations */
+.MuiCard-root {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.MuiCard-root:hover {
+    transform: translateY(-8px) scale(1.02) !important;
+    box-shadow: 0 20px 40px rgba(0, 234, 255, 0.15) !important;
+    animation: glow 2s infinite alternate;
+}
+
+/* Enhanced Button Animations */
+.MuiButton-root {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.MuiButton-root::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(0, 234, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.MuiButton-root:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.MuiButton-root:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 234, 255, 0.2);
+}
+
+/* Enhanced Chip Animations */
+.MuiChip-root {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.MuiChip-root:hover {
+    transform: scale(1.1) rotate(1deg);
+    animation: pulse 0.6s infinite alternate;
+}
+
+/* Loading Animation */
+.MuiLinearProgress-root {
+    background: linear-gradient(90deg, rgba(0, 234, 255, 0.1) 25%, transparent 37%, rgba(255, 106, 0, 0.1) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Page Transition Animation */
+.page-enter {
+    opacity: 0;
+    transform: translateX(100px);
+}
+
+.page-enter-active {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 300ms, transform 300ms;
+}
+
+.page-exit {
+    opacity: 1;
+}
+
+.page-exit-active {
+    opacity: 0;
+    transform: translateX(-100px);
+    transition: opacity 300ms, transform 300ms;
+}
+
+/* Interactive Elements */
+.interactive-element {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.interactive-element:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}
+
+/* Modern Glass Effect */
+.glass-effect {
+    background: rgba(0, 234, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 234, 255, 0.2);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(0, 234, 255, 0.37);
+}
+
+/* Responsive Design Enhancements */
+@media (max-width: 768px) {
+    .MuiCard-root:hover {
+        transform: translateY(-4px) scale(1.01) !important;
+    }
+
+    .source-ref:hover {
+        transform: translateY(-1px) scale(1.02);
+    }
+}
+
+/* High-Tech Theme Enhancements */
+.MuiTypography-root {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.MuiInputBase-root {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.MuiTab-root {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.MuiTab-root.Mui-selected {
+    color: #00eaff !important;
+}
+
+/* Print Styles */
+@media print {
+    .MuiCard-root:hover {
+        transform: none !important;
+        animation: none !important;
+    }
+
+    .source-ref {
+        color: #000 !important;
+        background: none !important;
+    }
+}
+
+/* Enhanced Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: rgba(255, 255, 255, 0.95) !important;
+    transition: all 0.3s ease;
+}
+
+h1:hover,
+h2:hover,
+h3:hover,
+h4:hover,
+h5:hover,
+h6:hover {
+    transform: scale(1.02);
+    animation: float 2s ease-in-out infinite;
+}
+
+/* Audio Bar Enhanced Animation */
+.audio-bar {
+    background: linear-gradient(135deg, #0f2027, #2c5364, #0f2027);
+    background-size: 200% 200%;
+    animation: gradient 4s ease infinite;
+}
+
+@keyframes gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.source-ref-link {
+    color: #e63946 !important;
+    text-decoration: none !important;
+    font-weight: 600;
+    padding: 2px 6px;
+    margin: 0 2px;
+    border-radius: 4px;
+    border: 1px solid #e63946;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    background: rgba(230, 57, 70, 0.1);
+}
+
+.source-ref-link:hover {
+    background: linear-gradient(90deg, #e63946, #ff6a00) !important;
+    color: white !important;
+    border-color: #e63946;
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(230, 57, 70, 0.4);
+}
+
+.source-ref-link:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Ensure header stays fixed */
+.MuiAppBar-positionFixed {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 1300 !important;
+    transform: none !important;
+}
+
+/* Prevent header from moving during scroll */
+.MuiAppBar-root {
+    will-change: auto !important;
+    transform: translateZ(0) !important;
+}
+
+/* Prevent text from disappearing */
+.MuiTypography-root,
+.MuiTypography-root *,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+div {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    user-select: text !important;
+}
+
+/* Override any conflicting selection styles */
+.MuiTypography-root::selection,
+h1::selection,
+h2::selection,
+h3::selection,
+h4::selection,
+h5::selection,
+h6::selection {
+    background: rgba(0, 234, 255, 0.3) !important;
+    color: inherit !important;
+    -webkit-text-fill-color: inherit !important;
+}
