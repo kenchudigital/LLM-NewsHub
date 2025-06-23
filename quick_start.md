@@ -9,7 +9,7 @@ python scrapers/trust_score/country_index_scraper.py
 python scrapers/trust_score/country_index_scraper.py
 ```
 
-## Classifier - Fake Mews
+## Classifier - Fake News
 
 ```bash
 python classifier/fake_news/run_pipeline.py 
@@ -40,7 +40,7 @@ result = predict_single_text(text)
 ## Daily Update
 
 ```bash
-python rull_all.py
+python run_all.py
 ```
 
 ## Scraper 
@@ -126,4 +126,28 @@ python migrate.py --date "2025-06-21"
 
 ```bash
 cd apps && docker compose up
+```
+
+## Potential issue
+
+```bash
+# Install this before run
+python setup_nltk.py
+```
+
+## Makefile Usage
+
+```bash
+# Full setup with NLTK
+make setup
+
+# Or step by step
+make install
+make setup-nltk
+
+# If you still get errors, try the alternative method
+make setup-nltk-alt
+
+# Debug NLTK issues
+make debug-nltk
 ```
