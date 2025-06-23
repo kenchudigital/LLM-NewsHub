@@ -6,6 +6,7 @@
 .env.development.local
 .env.test.local
 .env.production.local
+resource
 
 # Wav2Lip
 deployment/Wav2Lip/*
