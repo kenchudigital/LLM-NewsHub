@@ -1,0 +1,67 @@
+# Core ML and Data Science
+numpy==2.1.2
+pandas==2.3.0
+scikit-learn==1.7.0
+scipy==1.15.3
+matplotlib==3.10.3
+seaborn==0.13.2
+
+# Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+transformers==4.52.4
+sentence-transformers==4.1.0
+pytorch-lightning==2.5.1.post0
+
+# NLP and Text Processing
+nltk==3.9.1
+textblob==0.19.0
+vaderSentiment==3.3.2
+textstat==0.7.7
+regex==2024.11.6
+tokenizers==0.21.1
+
+# Web Scraping and APIs
+requests>=2.31.0
+beautifulsoup4==4.13.4
+praw==7.8.1
+prawcore==2.4.0
+feedparser==6.0.11
+aiohttp==3.12.13
+
+# Web Framework
+fastapi==0.115.12
+uvicorn==0.34.3
+streamlit==1.45.1
+
+# Image Processing
+opencv-python==4.6.0.66
+pillow==11.0.0
+imageio==2.37.0
+rembg==2.0.66
+
+# Audio Processing
+gTTS==2.5.4
+edge-tts==7.0.2
+soundfile==0.13.1
+soxr==0.5.0.post1
+
+# Utilities
+python-dotenv==1.1.0
+PyYAML==6.0.2
+tqdm==4.67.1
+joblib==1.5.1
+click==8.1.8
+colorama==0.4.6
+
+# Jupyter and Development
+jupyter==1.1.1
+ipykernel==6.29.5
+ipython==8.37.0
+
+# Additional Dependencies
+geopy==2.4.1
+networkx==3.3
+plotly==6.1.2
+tabulate==0.9.0 

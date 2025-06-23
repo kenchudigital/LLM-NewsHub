@@ -1,12 +1,5 @@
 # LLM News Generation
 
-## My env
-```
-Mac M1 Pro - 16GB RAM (CPU only)
-Python 3.10.18
-package: /requiremensts.txt
-```
-
 ## Git Intrusction 
 
 > How to modify the code?
@@ -32,8 +25,6 @@ git submodule add https://github.com/Rudrabha/Wav2Lip
 ## TODO LIST
 
 Potential Optimize:
-
-Remeber that need to add AI-Generated label for the content.
 
 0. Easy
     - Hot Topics
@@ -63,6 +54,14 @@ FEAT:
     - Recommendation
 
 [SO DIFFICULT TO HANDLE `GRAPH` IN `JAVASCRIPT` BUT HANDLE IN `PYTHON SCRIPT` NEED TO PROVIDE THE FIXED CONTENT OR CREATE THE `API CALL` FOR THAT]
+
+## My env
+```
+Mac M1 Pro - 16GB RAM (CPU only)
+Python 3.10.18
+package: /requiremensts.txt
+```
+
 
 ---
 
