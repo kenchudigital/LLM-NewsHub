@@ -55,6 +55,8 @@ Description:
 
 - Model: LLM (Generate card), GLiNER (social media entity recognization)
 
+- Event Card Idea: https://arxiv.org/pdf/2307.02839
+
 - Event Card (News Article) Data: [LINK](card/event/schemas.md)
 
 - Event Card (Social Media) Data: [LINK](card/statement/schemas.md)
