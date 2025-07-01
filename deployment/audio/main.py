@@ -50,7 +50,7 @@ def process_json_files(date_str: str):
             
             # Get summary_speech
             if 'summary_speech' not in data:
-                print(f"⚠️ No summary_speech found in {json_file.name}")
+                print(f"No summary_speech found in {json_file.name}")
                 return
             
             summary_text = data['summary_speech']
@@ -58,8 +58,8 @@ def process_json_files(date_str: str):
             # Generate output path
             output_file = audio_dir / f"group_{group_id}.mp3"
             
-            print(f"\n🎯 Processing group {group_id}")
-            print(f"📝 Text length: {len(summary_text)} characters")
+            print(f"\nProcessing group {group_id}")
+            print(f"Text length: {len(summary_text)} characters")
             
             # Create a temporary text file with the summary
             temp_text_file = audio_dir / f"{group_id}_temp.txt"
@@ -73,14 +73,14 @@ def process_json_files(date_str: str):
                     output_file=str(output_file),
                     voice_type='us'  # Using US voice
                 )
-                print(f"✅ Generated audio: {output_file}")
+                print(f"Generated audio: {output_file}")
             finally:
                 # Clean up temporary file
                 if temp_text_file.exists():
                     temp_text_file.unlink()
             
         except Exception as e:
-            print(f"❌ Error processing {json_file.name}: {str(e)}")
+            print(f"Error processing {json_file.name}: {str(e)}")
     
     async def process_all_files():
         tasks = [process_file(f) for f in json_files]
@@ -105,14 +105,14 @@ Example:
     args = parser.parse_args()
     
     if not validate_date(args.date):
-        print("❌ Error: Invalid date format. Please use YYYY-MM-DD")
+        print("Error: Invalid date format. Please use YYYY-MM-DD")
         return
     
     try:
         process_json_files(args.date)
-        print("\n✨ All files processed successfully!")
+        print("\nAll files processed successfully!")
     except Exception as e:
-        print(f"\n❌ Error: {str(e)}")
+        print(f"\nError: {str(e)}")
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,5 @@
 [submodule "deployment/Wav2Lip"]
 	path = deployment/Wav2Lip
 	url = https://github.com/Rudrabha/Wav2Lip
-[submodule "Wav2Lip"]
-	path = Wav2Lip
-	url = https://github.com/Rudrabha/Wav2Lip
 
 # git submodule add https://github.com/Rudrabha/Wav2Lip

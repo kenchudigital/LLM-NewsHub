@@ -31,7 +31,7 @@ class SimpleNewsTTS:
     def read_text_file(self, file_path: str) -> str:
         """Read text from file"""
         try:
-            print(f"📖 Reading file: {file_path}")
+            print(f"Reading file: {file_path}")
             with open(file_path, 'r', encoding='utf-8') as file:
                 text = file.read().strip()
             
@@ -63,7 +63,7 @@ class SimpleNewsTTS:
             tts = gTTS(text=text, lang='en', slow=False)
             tts.save(output_file)
             
-            print(f"✅ Google TTS completed successfully")
+            print(f"Google TTS completed successfully")
             return True
             
         except Exception as e:
