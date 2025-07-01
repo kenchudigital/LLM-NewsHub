@@ -1,3 +1,13 @@
+# Quick Start
+
+```bash
+docker-compose -f apps/docker-compose.yml build backend
+docker-compose -f apps/docker-compose.yml build frontend
+```
+
+After that push the image to Container Registry on the Cloud.
+
+
 # AI NewsSense - Restructured Backend
 
 This is the restructured backend application following the nexi-dashboard architecture pattern.

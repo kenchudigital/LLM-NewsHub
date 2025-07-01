@@ -18,6 +18,10 @@ git submodule add https://github.com/Rudrabha/Wav2Lip
 
 ## Quick Start - [LINK](/quick_start.md)
 
+## Facing issue
+
+- request ticket for docker login in `Alibaba Container Registry`
+
 ## Demo 
 
 ![Demo](z-img/demo.gif)
@@ -61,7 +65,6 @@ Mac M1 Pro - 16GB RAM (CPU only)
 Python 3.10.18
 package: /requiremensts.txt
 ```
-
 
 ---
 

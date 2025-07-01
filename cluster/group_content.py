@@ -225,7 +225,7 @@ class ContentGrouper:
                 min_clusters = 5  # Default fallback
             
             # Set range for testing
-            max_clusters = min(50, len(self.content_df) // 2)  # Don't exceed half the data size
+            max_clusters = min(50, len(fundus_df) // 2)  # Don't exceed half the data size
             test_range = range(min_clusters, max_clusters + 1)
         
         print(f"Testing n_clusters range: {list(test_range)}")

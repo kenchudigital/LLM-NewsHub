@@ -461,7 +461,6 @@ const ArticlePage: React.FC = () => {
 
     useEffect(() => {
         if (groupId && date) {
-            console.log(`🔄 Loading article: ${groupId} for date: ${date}`);
             fetchArticle();
 
             // Always show audio bar, but check availability for functionality
@@ -469,24 +468,16 @@ const ArticlePage: React.FC = () => {
 
             // Check audio availability with better debugging
             const audioUrl = `${STATIC_URL}/audio/${date}/${groupId}.mp3`;
-            console.log(`🎵 Checking audio at: ${audioUrl}`);
-            console.log(`🌐 API URL: ${API_URL}`);
 
             fetch(audioUrl, { method: 'HEAD' })
                 .then(response => {
-                    console.log(`📡 Audio HEAD response status: ${response.status}`);
                     if (!response.ok) {
-                        console.warn(`❌ Audio file not found at ${audioUrl}`);
-                        console.log('🔧 Audio bar shown but disabled - file not available');
                         setAudioError(true);
                     } else {
-                        console.log(`✅ Audio file found at ${audioUrl}`);
                         setAudioError(false);
                     }
                 })
                 .catch(error => {
-                    console.error('🚨 Error checking audio availability:', error);
-                    console.log('🔧 Audio bar shown but disabled - network error');
                     setAudioError(true);
                 });
         }
