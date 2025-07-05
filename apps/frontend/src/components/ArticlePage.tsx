@@ -453,8 +453,28 @@ const ArticlePage: React.FC = () => {
     const [audioAvailable, setAudioAvailable] = useState(true);
     const [audioError, setAudioError] = useState(false);
     const [expandedMeta, setExpandedMeta] = useState(false);
+    const [audioUnlocked, setAudioUnlocked] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isProcessingAudio, setIsProcessingAudio] = useState(false);
     const API_URL = config.API_URL || 'http://localhost:8000';
     const STATIC_URL = `${API_URL}/static`;
+
+    // Prevent double-triggering on mobile
+    const lastActionTime = useRef<number>(0);
+    const touchStartTime = useRef<number>(0);
+
+    // Detect mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+            const mobile = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent.toLowerCase());
+            setIsMobile(mobile);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         if (groupId && date) {
@@ -463,19 +483,26 @@ const ArticlePage: React.FC = () => {
             // Always show audio bar, but check availability for functionality
             setAudioAvailable(true); // Always show the bar
 
-            // Check audio availability with better debugging
+            // Check audio availability with range request (mobile-friendly)
             const audioUrl = `${STATIC_URL}/audio/${date}/${groupId}.mp3`;
 
-            fetch(audioUrl, { method: 'HEAD' })
+            fetch(audioUrl, {
+                method: 'GET',
+                headers: {
+                    'Range': 'bytes=0-1'  // Request only the first 2 bytes
+                }
+            })
                 .then(response => {
-                    if (!response.ok) {
-                        setAudioError(true);
-                    } else {
+                    // Accept both 206 (Partial Content) and 200 (OK) as success
+                    if (response.ok || response.status === 206) {
                         setAudioError(false);
+                    } else {
+                        setAudioError(true);
                     }
                 })
                 .catch(error => {
-                    setAudioError(true);
+                    // Don't set audio error here - let the audio element handle it
+                    // This prevents false negatives on mobile networks
                 });
         }
     }, [groupId, date]);
@@ -507,14 +534,210 @@ const ArticlePage: React.FC = () => {
         }
     };
 
-    const handlePlayPause = () => {
-        if (audioRef.current && !audioError) {
+    // Mobile audio unlock function
+    const unlockAudio = async () => {
+        if (!audioRef.current || audioUnlocked) return;
+
+        try {
+            // Create a short silent audio to unlock the audio context
+            const audio = audioRef.current;
+
+            // Method 1: Try to unlock the HTML5 audio element
+            const originalVolume = audio.volume;
+            audio.volume = 0.01; // Very low volume for unlock
+            audio.muted = false; // Ensure not muted
+
+            // Try to play and immediately pause to unlock audio
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                try {
+                    await playPromise;
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.volume = originalVolume;
+                    setAudioUnlocked(true);
+                    return;
+                } catch (playError) {
+                    console.warn('HTML5 audio unlock failed:', playError);
+                }
+            }
+
+            // Method 2: Try AudioContext unlock (for iOS Web Audio API issues)
+            try {
+                const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+                if (AudioContextClass) {
+                    const audioContext = new AudioContextClass();
+
+                    // Check if AudioContext is suspended (common on iOS)
+                    if (audioContext.state === 'suspended') {
+                        await audioContext.resume();
+                    }
+
+                    // Create a short beep to unlock the audio pipeline
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    // Set to very low volume and high frequency (barely audible)
+                    gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(20000, audioContext.currentTime); // 20kHz - above most hearing ranges
+
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.01); // 10ms beep
+
+                    // Clean up
+                    setTimeout(() => {
+                        oscillator.disconnect();
+                        gainNode.disconnect();
+                        audioContext.close();
+                    }, 100);
+
+                    setAudioUnlocked(true);
+                    return;
+                }
+            } catch (contextError) {
+                console.warn('AudioContext unlock failed:', contextError);
+            }
+
+            // Method 3: iOS-specific unlock using media session
+            try {
+                if ('mediaSession' in navigator) {
+                    (navigator as any).mediaSession.setActionHandler('play', () => {
+                        // Media session play handler
+                    });
+                }
+            } catch (sessionError) {
+                console.warn('Media session setup failed:', sessionError);
+            }
+
+            // Method 4: Fallback - try to create a user-initiated audio buffer
+            try {
+                const arrayBuffer = new ArrayBuffer(44100 * 0.1 * 2); // 0.1 second of silence
+                const audioBuffer = new Float32Array(arrayBuffer);
+
+                // Try to decode and play silence
+                if ('webkitAudioContext' in window) {
+                    const context = new (window as any).webkitAudioContext();
+                    if (context.state === 'suspended') {
+                        await context.resume();
+                    }
+                    context.close();
+                }
+
+                setAudioUnlocked(true);
+            } catch (fallbackError) {
+                console.warn('Fallback audio unlock failed:', fallbackError);
+            }
+
+        } catch (error) {
+            console.error('Audio unlock methods failed:', error);
+            // Don't set audioUnlocked to true if everything failed
+        }
+    };
+
+    const handlePlayPause = async (event?: React.MouseEvent | React.TouchEvent) => {
+        // Prevent double-triggering on mobile devices
+        const now = Date.now();
+        if (now - lastActionTime.current < 300) { // 300ms debounce
+            return;
+        }
+        lastActionTime.current = now;
+
+        if (!audioRef.current || audioError || isProcessingAudio) return;
+
+        setIsProcessingAudio(true);
+
+        try {
+            // On mobile, first interaction needs to unlock audio
+            if (isMobile && !audioUnlocked) {
+                await unlockAudio();
+
+                // If unlock failed, don't proceed
+                if (!audioUnlocked) {
+                    setIsProcessingAudio(false);
+                    return;
+                }
+            }
+
+            // Small delay for mobile to ensure audio context is ready
+            if (isMobile && !isPlaying) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
             if (isPlaying) {
                 audioRef.current.pause();
+                setIsPlaying(false);
             } else {
-                audioRef.current.play();
+                // On iOS, ensure the audio element is ready
+                if (isMobile) {
+                    // Load the audio if it's not already loaded
+                    if (audioRef.current.readyState < 2) {
+                        audioRef.current.load();
+
+                        // Wait for enough data to play
+                        await new Promise((resolve, reject) => {
+                            const timeout = setTimeout(() => {
+                                reject(new Error('Audio load timeout'));
+                            }, 5000);
+
+                            const onCanPlay = () => {
+                                clearTimeout(timeout);
+                                audioRef.current?.removeEventListener('canplay', onCanPlay);
+                                audioRef.current?.removeEventListener('error', onError);
+                                resolve(undefined);
+                            };
+
+                            const onError = (e: any) => {
+                                clearTimeout(timeout);
+                                audioRef.current?.removeEventListener('canplay', onCanPlay);
+                                audioRef.current?.removeEventListener('error', onError);
+                                reject(e);
+                            };
+
+                            audioRef.current?.addEventListener('canplay', onCanPlay);
+                            audioRef.current?.addEventListener('error', onError);
+                        });
+                    }
+
+                    // Set appropriate attributes for iOS
+                    audioRef.current.preload = 'auto';
+                    audioRef.current.setAttribute('webkit-playsinline', 'true');
+                    audioRef.current.setAttribute('playsinline', 'true');
+                }
+
+                // Handle play promise properly (required for mobile)
+                const playPromise = audioRef.current.play();
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => {
+                            setIsPlaying(true);
+                        })
+                        .catch((error) => {
+                            console.error('Audio play failed:', error);
+
+                            // Try to diagnose the issue
+                            if (error.name === 'NotAllowedError') {
+                                setAudioUnlocked(false); // Reset unlock state
+                            }
+
+                            setAudioError(true);
+                            setIsPlaying(false);
+                        });
+                } else {
+                    setIsPlaying(true);
+                }
             }
-            setIsPlaying(!isPlaying);
+        } catch (error) {
+            console.error('Audio playback error:', error);
+            setAudioError(true);
+            setIsPlaying(false);
+        } finally {
+            // Reset processing state after a delay to prevent rapid clicking
+            setTimeout(() => {
+                setIsProcessingAudio(false);
+            }, 200);
         }
     };
 
@@ -578,24 +801,74 @@ const ArticlePage: React.FC = () => {
         window.open(source, '_blank', 'noopener,noreferrer');
     };
 
-    const handleAudioError = () => {
-        console.error(`🚨 Audio Error Handler: Audio failed to load for article ${groupId} on ${date}`);
-        console.error(`🎯 Expected path: /static/audio/${date}/${groupId}.mp3`);
-        console.error(`🌐 Full URL: ${API_URL}/static/audio/${date}/${groupId}.mp3`);
+    const handleAudioError = (event: any) => {
+        console.error(`Audio Error Handler: Audio failed to load for article ${groupId} on ${date}`);
+        console.error(`Expected path: /static/audio/${date}/${groupId}.mp3`);
+        console.error(`Full URL: ${API_URL}/static/audio/${date}/${groupId}.mp3`);
+
+        // Log detailed error information
+        if (event?.target) {
+            console.error('Audio Error Details:', {
+                readyState: event.target.readyState,
+                networkState: event.target.networkState,
+                error: event.target.error
+            });
+        }
+
         setAudioError(true);
+        setIsPlaying(false);
         // Keep audioAvailable true so bar stays visible
-        console.log('🔧 Audio controls remain visible but disabled for user feedback');
     };
 
     const handleAudioLoaded = () => {
-        console.log(`✅ Audio Successfully Loaded: Audio loaded for article ${groupId} on ${date}`);
-        console.log(`🎯 Path: /static/audio/${date}/${groupId}.mp3`);
         setAudioError(false);
         setAudioAvailable(true);
     };
 
+    // Handle audio events specific to mobile
+    const handleCanPlayThrough = () => {
+        if (isMobile && !audioUnlocked) {
+            // Audio ready but waiting for user interaction on mobile
+        }
+    };
+
+    const handleAudioPlay = () => {
+        setIsPlaying(true);
+    };
+
+    const handleAudioPause = () => {
+        setIsPlaying(false);
+    };
+
+    const handleAudioEnded = () => {
+        setIsPlaying(false);
+        setCurrentTime(0);
+    };
+
     const toggleMeta = () => {
         setExpandedMeta(!expandedMeta);
+    };
+
+    // Mobile touch event handlers
+    const handleTouchStart = (event: React.TouchEvent) => {
+        touchStartTime.current = Date.now();
+    };
+
+    const handleTouchEnd = (event: React.TouchEvent) => {
+        const touchDuration = Date.now() - touchStartTime.current;
+
+        // Only handle touch end if it's a proper tap (not a long press or swipe)
+        if (touchDuration < 1000 && touchDuration > 50) {
+            event.preventDefault(); // Prevent click event from firing
+            handlePlayPause(event);
+        }
+    };
+
+    const handleClick = (event: React.MouseEvent) => {
+        // Only handle click if not on mobile or if no recent touch
+        if (!isMobile || Date.now() - touchStartTime.current > 500) {
+            handlePlayPause(event);
+        }
     };
 
     if (loading) {
@@ -626,11 +899,26 @@ const ArticlePage: React.FC = () => {
                 <AudioBar className="audio-bar">
                     <AudioControls>
                         <PlayPauseButton
-                            onClick={handlePlayPause}
-                            disabled={audioError}
+                            onClick={handleClick}
+                            onTouchStart={handleTouchStart}
+                            onTouchEnd={handleTouchEnd}
+                            disabled={audioError || isProcessingAudio}
                             isplaying={isPlaying}
+                            title={
+                                isProcessingAudio ? "Processing..." :
+                                    isMobile && !audioUnlocked ? "Tap to enable audio" :
+                                        isPlaying ? "Pause" : "Play"
+                            }
+                            sx={{
+                                touchAction: 'manipulation', // Prevents double-tap zoom on iOS
+                                WebkitTouchCallout: 'none',
+                                WebkitUserSelect: 'none',
+                                userSelect: 'none',
+                                opacity: isProcessingAudio ? 0.7 : 1,
+                                transition: 'opacity 0.2s ease',
+                            }}
                         >
-                            {isPlaying ? <Pause /> : <PlayArrow />}
+                            {isProcessingAudio ? <VolumeUp /> : (isPlaying ? <Pause /> : <PlayArrow />)}
                         </PlayPauseButton>
                         <VolumeUp sx={{ color: audioError ? 'rgba(255,255,255,0.5)' : '#00eaff', transition: 'color 0.3s' }} />
                         <ProgressContainer>
@@ -660,6 +948,16 @@ const ArticlePage: React.FC = () => {
                                 Audio file not found
                             </Typography>
                         )}
+                        {isMobile && !audioUnlocked && !audioError && !isProcessingAudio && (
+                            <Typography variant="caption" sx={{ color: '#00eaff', fontSize: '0.8rem', fontWeight: 500 }}>
+                                Tap play to enable audio
+                            </Typography>
+                        )}
+                        {isProcessingAudio && (
+                            <Typography variant="caption" sx={{ color: '#ff6a00', fontSize: '0.8rem', fontWeight: 500 }}>
+                                Processing audio...
+                            </Typography>
+                        )}
                         <Tooltip title="Share">
                             <IconButton sx={{ color: '#ff6a00', transition: 'color 0.3s', '&:hover': { color: '#00eaff' } }}>
                                 <Share />
@@ -679,10 +977,15 @@ const ArticlePage: React.FC = () => {
                         src={`${STATIC_URL}/audio/${date}/${groupId}.mp3`}
                         onTimeUpdate={handleTimeUpdate}
                         onLoadedMetadata={handleLoadedMetadata}
-                        onEnded={() => setIsPlaying(false)}
+                        onEnded={handleAudioEnded}
                         onError={handleAudioError}
                         onCanPlay={handleAudioLoaded}
-                        preload="metadata"
+                        onCanPlayThrough={handleCanPlayThrough}
+                        onPlay={handleAudioPlay}
+                        onPause={handleAudioPause}
+                        preload={isMobile ? "none" : "metadata"}
+                        playsInline
+                        crossOrigin="anonymous"
                     />
                 </AudioBar>
 

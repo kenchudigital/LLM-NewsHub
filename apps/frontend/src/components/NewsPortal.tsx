@@ -873,6 +873,8 @@ const NewsPortal: React.FC = () => {
     const [duration, setDuration] = useState(0);
     const [audioError, setAudioError] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
+    const [audioUnlocked, setAudioUnlocked] = useState(false);
+    const [isProcessingAudio, setIsProcessingAudio] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -885,8 +887,21 @@ const NewsPortal: React.FC = () => {
 
     // Add isMobile state
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
+
+    // Prevent double-triggering on mobile
+    const lastActionTime = useRef<number>(0);
+    const touchStartTime = useRef<number>(0);
+
+    const handleResize = () => setIsMobile(window.innerWidth <= 600);
+
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 600);
+        const checkMobile = () => {
+            const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+            const mobile = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent.toLowerCase());
+            setIsMobile(mobile);
+        };
+
+        checkMobile();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
@@ -1057,19 +1072,30 @@ const NewsPortal: React.FC = () => {
         console.log('Calling fetchArticleDetail...');
         fetchArticleDetail(article.group_id, article.date);
 
-        // Reset audio
+        // Reset audio state
         setIsPlaying(false);
         setCurrentTime(0);
         setAudioError(false);
+        setAudioUnlocked(false); // Reset audio unlock state for new article
 
-        // Check audio availability
+        // Check audio availability with range request (mobile-friendly)
         const audioUrl = `${STATIC_URL}/audio/${article.date}/${article.group_id}.mp3`;
-        fetch(audioUrl, { method: 'HEAD' })
+        fetch(audioUrl, {
+            method: 'GET',
+            headers: {
+                'Range': 'bytes=0-1'  // Request only the first 2 bytes
+            }
+        })
             .then(response => {
-                setAudioError(!response.ok);
+                // Accept both 206 (Partial Content) and 200 (OK) as success
+                if (response.ok || response.status === 206) {
+                    setAudioError(false);
+                } else {
+                    setAudioError(true);
+                }
             })
-            .catch(() => {
-                setAudioError(true);
+            .catch(error => {
+                console.warn('NewsPortal: Audio availability check failed:', error);
             });
     };
 
@@ -1091,15 +1117,217 @@ const NewsPortal: React.FC = () => {
         fetchArticles();
     };
 
+    // Mobile audio unlock function
+    const unlockAudio = async () => {
+        if (!audioRef.current || audioUnlocked) return;
+
+        try {
+            console.log('🔓 NewsPortal: Attempting to unlock mobile audio...');
+
+            // Create a short silent audio to unlock the audio context
+            const audio = audioRef.current;
+
+            // Method 1: Try to unlock the HTML5 audio element
+            const originalVolume = audio.volume;
+            audio.volume = 0.01; // Very low volume for unlock
+            audio.muted = false; // Ensure not muted
+
+            // Try to play and immediately pause to unlock audio
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                try {
+                    await playPromise;
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.volume = originalVolume;
+                    setAudioUnlocked(true);
+                    console.log('NewsPortal: HTML5 Audio unlocked successfully');
+                    return;
+                } catch (playError) {
+                    console.warn('NewsPortal: HTML5 audio unlock failed:', playError);
+                }
+            }
+
+            // Method 2: Try AudioContext unlock (for iOS Web Audio API issues)
+            try {
+                const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+                if (AudioContextClass) {
+                    const audioContext = new AudioContextClass();
+
+                    // Check if AudioContext is suspended (common on iOS)
+                    if (audioContext.state === 'suspended') {
+                        console.log('NewsPortal: AudioContext is suspended, attempting to resume...');
+                        await audioContext.resume();
+                        console.log('NewsPortal: AudioContext resumed successfully');
+                    }
+
+                    // Create a short beep to unlock the audio pipeline
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    // Set to very low volume and high frequency (barely audible)
+                    gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(20000, audioContext.currentTime); // 20kHz
+
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.01); // 10ms beep
+
+                    // Clean up
+                    setTimeout(() => {
+                        oscillator.disconnect();
+                        gainNode.disconnect();
+                        audioContext.close();
+                    }, 100);
+
+                    setAudioUnlocked(true);
+                    console.log('NewsPortal: AudioContext unlock completed');
+                    return;
+                }
+            } catch (contextError) {
+                console.warn('NewsPortal: AudioContext unlock failed:', contextError);
+            }
+
+            // Method 3: Fallback
+            try {
+                if ('webkitAudioContext' in window) {
+                    const context = new (window as any).webkitAudioContext();
+                    if (context.state === 'suspended') {
+                        await context.resume();
+                    }
+                    context.close();
+                }
+
+                setAudioUnlocked(true);
+                console.log('NewsPortal: Fallback audio unlock completed');
+            } catch (fallbackError) {
+                console.warn('NewsPortal: Fallback audio unlock failed:', fallbackError);
+            }
+
+        } catch (error) {
+            console.error('NewsPortal: All audio unlock methods failed:', error);
+        }
+    };
+
     // Audio controls
-    const handlePlayPause = () => {
-        if (audioRef.current && !audioError && selectedGroupId) {
+    const handlePlayPause = async (event?: React.MouseEvent | React.TouchEvent) => {
+        // Prevent double-triggering on mobile devices
+        const now = Date.now();
+        if (now - lastActionTime.current < 300) { // 300ms debounce
+            console.log('NewsPortal: Action ignored - too soon after last action');
+            return;
+        }
+        lastActionTime.current = now;
+
+        if (!audioRef.current || audioError || !selectedGroupId || isProcessingAudio) return;
+
+        setIsProcessingAudio(true);
+        console.log('NewsPortal: Play/Pause triggered. Mobile:', isMobile, 'Unlocked:', audioUnlocked);
+
+        try {
+            // On mobile, first interaction needs to unlock audio
+            if (isMobile && !audioUnlocked) {
+                console.log('NewsPortal: Mobile unlock required...');
+                await unlockAudio();
+
+                // If unlock failed, don't proceed
+                if (!audioUnlocked) {
+                    console.error('NewsPortal: Audio unlock failed, cannot proceed with playback');
+                    setIsProcessingAudio(false);
+                    return;
+                }
+            }
+
+            // Small delay for mobile to ensure audio context is ready
+            if (isMobile && !isPlaying) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
             if (isPlaying) {
                 audioRef.current.pause();
+                setIsPlaying(false);
+                console.log('NewsPortal: Audio paused');
             } else {
-                audioRef.current.play();
+                console.log('NewsPortal: Attempting to play audio...');
+
+                // On iOS, ensure the audio element is ready
+                if (isMobile) {
+                    // Load the audio if it's not already loaded
+                    if (audioRef.current.readyState < 2) {
+                        console.log('NewsPortal: Loading audio data...');
+                        audioRef.current.load();
+
+                        // Wait for enough data to play
+                        await new Promise((resolve, reject) => {
+                            const timeout = setTimeout(() => {
+                                reject(new Error('Audio load timeout'));
+                            }, 5000);
+
+                            const onCanPlay = () => {
+                                clearTimeout(timeout);
+                                audioRef.current?.removeEventListener('canplay', onCanPlay);
+                                audioRef.current?.removeEventListener('error', onError);
+                                resolve(undefined);
+                            };
+
+                            const onError = (e: any) => {
+                                clearTimeout(timeout);
+                                audioRef.current?.removeEventListener('canplay', onCanPlay);
+                                audioRef.current?.removeEventListener('error', onError);
+                                reject(e);
+                            };
+
+                            audioRef.current?.addEventListener('canplay', onCanPlay);
+                            audioRef.current?.addEventListener('error', onError);
+                        });
+                    }
+
+                    // Set appropriate attributes for iOS
+                    audioRef.current.preload = 'auto';
+                    audioRef.current.setAttribute('webkit-playsinline', 'true');
+                    audioRef.current.setAttribute('playsinline', 'true');
+                }
+
+                // Handle play promise properly (required for mobile)
+                const playPromise = audioRef.current.play();
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => {
+                            setIsPlaying(true);
+                            console.log('NewsPortal: Audio playing successfully');
+                        })
+                        .catch((error) => {
+                            console.error('NewsPortal: Audio play failed:', error);
+
+                            // Try to diagnose the issue
+                            if (error.name === 'NotAllowedError') {
+                                console.error('NewsPortal: User gesture required or autoplay policy blocked');
+                                setAudioUnlocked(false); // Reset unlock state
+                            } else if (error.name === 'NotSupportedError') {
+                                console.error('NewsPortal: Audio format not supported');
+                            } else if (error.name === 'AbortError') {
+                                console.error('NewsPortal: Play operation was aborted');
+                            }
+
+                            setAudioError(true);
+                            setIsPlaying(false);
+                        });
+                } else {
+                    setIsPlaying(true);
+                    console.log('NewsPortal: Audio playing (no promise)');
+                }
             }
-            setIsPlaying(!isPlaying);
+        } catch (error) {
+            console.error('NewsPortal: Audio playback error:', error);
+            setAudioError(true);
+            setIsPlaying(false);
+        } finally {
+            // Reset processing state after a delay to prevent rapid clicking
+            setTimeout(() => {
+                setIsProcessingAudio(false);
+            }, 200);
         }
     };
 
@@ -1283,6 +1511,30 @@ const NewsPortal: React.FC = () => {
     useEffect(() => {
         console.log('selectedGroupId changed:', selectedGroupId);
     }, [selectedGroupId]);
+
+    // Mobile touch event handlers for NewsPortal
+    const handleTouchStart = (event: React.TouchEvent) => {
+        touchStartTime.current = Date.now();
+        console.log('👆 NewsPortal: Touch start');
+    };
+
+    const handleTouchEnd = (event: React.TouchEvent) => {
+        const touchDuration = Date.now() - touchStartTime.current;
+        console.log('👆 NewsPortal: Touch end, duration:', touchDuration);
+
+        // Only handle touch end if it's a proper tap (not a long press or swipe)
+        if (touchDuration < 1000 && touchDuration > 50) {
+            event.preventDefault(); // Prevent click event from firing
+            handlePlayPause(event);
+        }
+    };
+
+    const handleClick = (event: React.MouseEvent) => {
+        // Only handle click if not on mobile or if no recent touch
+        if (!isMobile || Date.now() - touchStartTime.current > 500) {
+            handlePlayPause(event);
+        }
+    };
 
     return (
         <Box sx={{ minHeight: '100vh', background: 'inherit' }}>
@@ -1626,20 +1878,38 @@ const NewsPortal: React.FC = () => {
                                             setAudioError(true);
                                         }}
                                         onCanPlay={() => setAudioError(false)}
+                                        onPlay={() => setIsPlaying(true)}
+                                        onPause={() => setIsPlaying(false)}
+                                        onEnded={() => { setIsPlaying(false); setCurrentTime(0); }}
+                                        preload={isMobile ? "none" : "metadata"}
+                                        playsInline
                                         crossOrigin="anonymous"
                                     />
 
                                     <IconButton
-                                        onClick={handlePlayPause}
-                                        disabled={audioError}
+                                        onClick={handleClick}
+                                        onTouchStart={handleTouchStart}
+                                        onTouchEnd={handleTouchEnd}
+                                        disabled={audioError || isProcessingAudio}
+                                        title={
+                                            isProcessingAudio ? "Processing..." :
+                                                isMobile && !audioUnlocked ? "Tap to enable audio" :
+                                                    isPlaying ? "Pause" : "Play"
+                                        }
                                         sx={{
                                             color: audioError ? 'rgba(255, 255, 255, 0.3)' : '#00eaff',
+                                            touchAction: 'manipulation', // Prevents double-tap zoom on iOS
+                                            WebkitTouchCallout: 'none',
+                                            WebkitUserSelect: 'none',
+                                            userSelect: 'none',
+                                            opacity: isProcessingAudio ? 0.7 : 1,
+                                            transition: 'opacity 0.2s ease',
                                             '&:hover': {
                                                 backgroundColor: audioError ? 'transparent' : 'rgba(0, 234, 255, 0.1)',
                                             },
                                         }}
                                     >
-                                        {isPlaying ? <Pause /> : <PlayArrow />}
+                                        {isProcessingAudio ? <VolumeUp /> : (isPlaying ? <Pause /> : <PlayArrow />)}
                                     </IconButton>
 
                                     <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -1671,6 +1941,16 @@ const NewsPortal: React.FC = () => {
                                     {audioError && (
                                         <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)', fontStyle: 'italic' }}>
                                             Audio not available
+                                        </Typography>
+                                    )}
+                                    {isMobile && !audioUnlocked && !audioError && !isProcessingAudio && (
+                                        <Typography variant="body2" sx={{ color: '#00eaff', fontStyle: 'italic' }}>
+                                            Tap play to enable audio
+                                        </Typography>
+                                    )}
+                                    {isProcessingAudio && (
+                                        <Typography variant="body2" sx={{ color: '#ff6a00', fontStyle: 'italic' }}>
+                                            Processing audio...
                                         </Typography>
                                     )}
                                 </Box>

@@ -71,3 +71,8 @@ package: /requiremensts.txt
 This project is licensed under the **MIT License**.  
 For details, see [LICENSE](/license).  
 
+---
+
+## Full Screen Demo
+
+![Demo](z-img/full_screen.png)
