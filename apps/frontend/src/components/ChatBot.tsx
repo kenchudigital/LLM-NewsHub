@@ -421,7 +421,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                             }}
                         >
                             <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'rgba(255, 255, 255, 0.9)' }}>
-                                🤖 AI is analyzing and generating response...
+                                AI is analyzing and generating response...
                             </Typography>
                         </MessageBubble>
                     </ListItem>

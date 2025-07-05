@@ -271,7 +271,6 @@ const NewsSection: React.FC<NewsWithDetailProps> = ({ onArticleSelect, onChartAd
                     <Tab label="Social" value="social" />
                     <Tab label="Entertainment" value="entertainment" />
                     <Tab label="Technology" value="tech" />
-                    <Tab label="Sport" value="sport" />
                 </Tabs>
             </Box>
 

@@ -21,6 +21,12 @@ import {
     InputAdornment,
     CircularProgress,
     Fab,
+    Modal,
+    Backdrop,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from '@mui/material';
 import {
     PlayArrow,
@@ -48,6 +54,9 @@ import {
     AllInclusive,
     CalendarToday as CalendarTodayIcon,
     Schedule as ScheduleIcon,
+    VideoLibrary,
+    Fullscreen,
+    FullscreenExit,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
@@ -754,9 +763,36 @@ const DateFilter = styled(Box)(({ theme }) => ({
     background: 'rgba(13, 13, 13, 0.6)',
     borderRadius: theme.shape.borderRadius,
     marginBottom: theme.spacing(2),
+    position: 'relative',
     [theme.breakpoints.down('sm')]: {
         flexDirection: 'column',
         alignItems: 'flex-start',
+        gap: theme.spacing(1),
+    },
+}));
+
+const DateFilterContainer = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    gap: theme.spacing(1),
+    overflowX: 'auto',
+    scrollBehavior: 'smooth',
+    maxWidth: 'calc(5 * 140px + 4 * 8px)', // Show max 5 items
+    '&::-webkit-scrollbar': {
+        height: '4px',
+    },
+    '&::-webkit-scrollbar-track': {
+        background: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: '2px',
+    },
+    '&::-webkit-scrollbar-thumb': {
+        background: 'rgba(0, 234, 255, 0.3)',
+        borderRadius: '2px',
+    },
+    '&::-webkit-scrollbar-thumb:hover': {
+        background: 'rgba(0, 234, 255, 0.5)',
+    },
+    [theme.breakpoints.down('sm')]: {
+        maxWidth: 'calc(4 * 160px + 3 * 8px)', // Show max 4 items on mobile with wider buttons
     },
 }));
 
@@ -813,6 +849,8 @@ interface ArticleData {
 }
 
 const NewsPortal: React.FC = () => {
+    console.log('NewsPortal component loaded');
+
     // const navigate = useNavigate(); // Not needed anymore
     // States
     const [articles, setArticles] = useState<NewsArticle[]>([]);
@@ -826,6 +864,7 @@ const NewsPortal: React.FC = () => {
     const [isChatMinimized, setIsChatMinimized] = useState(true);
     const [selectedSectionIndex, setSelectedSectionIndex] = useState<number>(0);
     const [availableDates, setAvailableDates] = useState<string[]>([]);
+    const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
     // Audio states
     const [isPlaying, setIsPlaying] = useState(false);
@@ -835,7 +874,25 @@ const NewsPortal: React.FC = () => {
     const [isBookmarked, setIsBookmarked] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
     const carouselRef = useRef<HTMLDivElement>(null);
+    const dateFilterRef = useRef<HTMLDivElement>(null);
+
+    // State definitions should be at the top of the component
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    // Add isMobile state
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 600);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        console.log('selectedGroupId changed:', selectedGroupId);
+    }, [selectedGroupId]);
 
     // Fix API URL - provide fallback for development
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -845,8 +902,7 @@ const NewsPortal: React.FC = () => {
     const fixedCategories = {
         social: 'Social',
         tech: 'Technology',
-        entertainment: 'Entertainment',
-        sport: 'Sports'
+        entertainment: 'Entertainment'
     };
 
     // Fetch articles on component mount and when filters change
@@ -1063,6 +1119,16 @@ const NewsPortal: React.FC = () => {
         }
     };
 
+    const scrollDateFilter = (direction: 'left' | 'right') => {
+        if (dateFilterRef.current) {
+            const scrollAmount = 150; // approximate button width + gap
+            dateFilterRef.current.scrollBy({
+                left: direction === 'left' ? -scrollAmount : scrollAmount,
+                behavior: 'smooth',
+            });
+        }
+    };
+
     // Source link rendering with improved styling
     const renderContentWithSources = (content: string, sources: string[]) => {
         if (!sources || sources.length === 0) {
@@ -1097,6 +1163,11 @@ const NewsPortal: React.FC = () => {
             return null;
         }
 
+        const truncateUrl = (url: string, maxLength: number = 60) => {
+            if (url.length <= maxLength) return url;
+            return url.substring(0, maxLength) + '...';
+        };
+
         return (
             <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(0, 234, 255, 0.2)' }}>
                 <Typography variant="subtitle2" sx={{ color: '#00eaff', mb: 1, fontWeight: 600 }}>
@@ -1109,22 +1180,56 @@ const NewsPortal: React.FC = () => {
                         sx={{
                             color: 'rgba(255, 255, 255, 0.8)',
                             mb: 0.5,
-                            fontSize: '0.85rem'
+                            fontSize: '0.85rem',
+                            wordBreak: 'break-all',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 0.5,
                         }}
                     >
-                        <span style={{ color: '#00eaff', fontWeight: 600 }}>[{index + 1}]</span>{' '}
+                        <span style={{
+                            color: '#00eaff',
+                            fontWeight: 600,
+                            flexShrink: 0,
+                        }}>
+                            [{index + 1}]
+                        </span>
                         <a
                             href={source}
                             target="_blank"
                             rel="noopener noreferrer"
+                            title={source}
                             style={{
                                 color: 'rgba(255, 255, 255, 0.8)',
-                                textDecoration: 'none'
+                                textDecoration: 'none',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                minWidth: 0,
+                                flex: 1,
                             }}
                             onMouseOver={(e) => (e.target as HTMLAnchorElement).style.color = '#00eaff'}
                             onMouseOut={(e) => (e.target as HTMLAnchorElement).style.color = 'rgba(255, 255, 255, 0.8)'}
                         >
-                            {source}
+                            <Box
+                                component="span"
+                                sx={{
+                                    display: 'inline-block',
+                                    maxWidth: '100%',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    '@media (max-width: 600px)': {
+                                        maxWidth: '200px',
+                                    },
+                                    '@media (max-width: 400px)': {
+                                        maxWidth: '150px',
+                                    },
+                                }}
+                            >
+                                {source}
+                            </Box>
                         </a>
                     </Typography>
                 ))}
@@ -1177,7 +1282,7 @@ const NewsPortal: React.FC = () => {
                             sx={{ fontSize: '2.5rem', color: '#00eaff' }}
                         />
                         <Typography className="logo-text">
-                            AI News Sense v2.0
+                            AI News Sense
                         </Typography>
                     </Logo>
                     <SearchBar>
@@ -1238,10 +1343,38 @@ const NewsPortal: React.FC = () => {
                             }}
                         />
                     </SearchBar>
+                    <Tooltip title="Watch Summary Video">
+                        <IconButton
+                            onClick={() => setIsVideoModalOpen(true)}
+                            sx={{
+                                color: '#00eaff',
+                                background: 'rgba(0, 234, 255, 0.1)',
+                                borderRadius: '12px',
+                                padding: '12px',
+                                '&:hover': {
+                                    background: 'rgba(0, 234, 255, 0.2)',
+                                    transform: 'scale(1.05)',
+                                },
+                                transition: 'all 0.3s ease',
+                                '@media (max-width: 768px)': {
+                                    padding: '8px',
+                                },
+                            }}
+                        >
+                            <VideoLibrary sx={{ fontSize: '1.5rem' }} />
+                        </IconButton>
+                    </Tooltip>
                 </HeaderContent>
             </Header>
 
-            <Container maxWidth={false} sx={{ py: 4, mt: '90px' }}>
+            <Container maxWidth={false} sx={{
+                py: 4,
+                mt: '90px',
+                '@media (max-width: 600px)': {
+                    mt: '220px',
+                    pt: 1,
+                }
+            }}>
                 {/* Date Filter */}
                 <Container maxWidth={false} sx={{ maxWidth: '1000px', margin: '0 auto', mb: 3 }}>
                     <DateFilter>
@@ -1249,18 +1382,73 @@ const NewsPortal: React.FC = () => {
                             <CalendarTodayIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
                             Filter by Date:
                         </Typography>
-                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', flex: 1 }}>
-                            {availableDates.map((date) => (
-                                <DateButton
-                                    key={date}
-                                    selected={selectedDate === date}
-                                    onClick={() => handleDateChange(date)}
-                                    startIcon={<ScheduleIcon fontSize="small" />}
+                        {isMobile ? (
+                            <FormControl fullWidth size="small">
+                                <InputLabel id="date-select-label">Select Date</InputLabel>
+                                <Select
+                                    labelId="date-select-label"
+                                    value={selectedDate || ''}
+                                    label="Select Date"
+                                    onChange={e => handleDateChange(e.target.value)}
                                 >
-                                    {new Date(date).toLocaleDateString()}
-                                </DateButton>
-                            ))}
-                        </Box>
+                                    {availableDates.map(date => (
+                                        <MenuItem key={date} value={date}>
+                                            {new Date(date).toLocaleDateString()}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        ) : (
+                            <Box sx={{ position: 'relative', flex: 1 }}>
+                                <DateFilterContainer ref={dateFilterRef}>
+                                    {availableDates.map((date) => (
+                                        <DateButton
+                                            key={date}
+                                            selected={selectedDate === date}
+                                            onClick={() => handleDateChange(date)}
+                                        >
+                                            {new Date(date).toLocaleDateString()}
+                                        </DateButton>
+                                    ))}
+                                </DateFilterContainer>
+                                {availableDates.length > 1 && (
+                                    <>
+                                        <IconButton
+                                            onClick={() => scrollDateFilter('left')}
+                                            sx={{
+                                                position: 'absolute',
+                                                left: -20,
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                zIndex: 2,
+                                                background: 'rgba(0, 234, 255, 0.1)',
+                                                '&:hover': {
+                                                    background: 'rgba(0, 234, 255, 0.2)',
+                                                },
+                                            }}
+                                        >
+                                            <ChevronLeft sx={{ color: '#00eaff' }} />
+                                        </IconButton>
+                                        <IconButton
+                                            onClick={() => scrollDateFilter('right')}
+                                            sx={{
+                                                position: 'absolute',
+                                                right: -20,
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                zIndex: 2,
+                                                background: 'rgba(0, 234, 255, 0.1)',
+                                                '&:hover': {
+                                                    background: 'rgba(0, 234, 255, 0.2)',
+                                                },
+                                            }}
+                                        >
+                                            <ChevronRight sx={{ color: '#00eaff' }} />
+                                        </IconButton>
+                                    </>
+                                )}
+                            </Box>
+                        )}
                     </DateFilter>
                 </Container>
 
@@ -1408,7 +1596,12 @@ const NewsPortal: React.FC = () => {
                                     border: '1px solid rgba(0, 234, 255, 0.2)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: 2
+                                    gap: 2,
+                                    '@media (max-width: 768px)': {
+                                        flexWrap: 'wrap',
+                                        gap: 1,
+                                        p: 1.5,
+                                    },
                                 }}>
                                     <audio
                                         ref={audioRef}
@@ -1470,12 +1663,34 @@ const NewsPortal: React.FC = () => {
                                 </Box>
                             )}
 
-                            <Box sx={{ display: 'flex', gap: 3 }}>
+                            <Box sx={{
+                                display: 'flex',
+                                gap: 3,
+                                '@media (max-width: 768px)': {
+                                    flexDirection: 'column',
+                                    gap: 2,
+                                },
+                            }}>
                                 {/* Article Content - Full Width */}
-                                <Box sx={{ flex: 1 }}>
+                                <Box sx={{
+                                    flex: 1,
+                                    '@media (max-width: 768px)': {
+                                        width: '100%',
+                                    },
+                                }}>
                                     {/* AI Generated Label for Article Detail */}
 
-                                    <Typography variant="h3" sx={{ color: '#00eaff', mb: 2, fontWeight: 700 }}>
+                                    <Typography variant="h3" sx={{
+                                        color: '#00eaff',
+                                        mb: 2,
+                                        fontWeight: 700,
+                                        '@media (max-width: 768px)': {
+                                            fontSize: '1.8rem',
+                                        },
+                                        '@media (max-width: 480px)': {
+                                            fontSize: '1.5rem',
+                                        },
+                                    }}>
                                         {selectedArticle.headline}
                                     </Typography>
                                     <Box sx={{
@@ -1518,9 +1733,17 @@ const NewsPortal: React.FC = () => {
                                                 {section.section}
                                             </Typography>
 
-                                            {/* Section Content and Analysis Side by Side */}
-                                            <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start' }}>
-                                                {/* Section Content - 固定寬度 */}
+                                            {/* Section Content and Analysis - Responsive Layout */}
+                                            <Box sx={{
+                                                display: 'flex',
+                                                gap: 3,
+                                                alignItems: 'flex-start',
+                                                '@media (max-width: 768px)': {
+                                                    flexDirection: 'column',
+                                                    gap: 2,
+                                                },
+                                            }}>
+                                                {/* Section Content */}
                                                 <Box sx={{
                                                     width: '600px',
                                                     minWidth: '600px',
@@ -1536,11 +1759,22 @@ const NewsPortal: React.FC = () => {
                                                         background: 'rgba(0, 234, 255, 0.05)',
                                                         borderRadius: 2,
                                                         border: '1px solid rgba(0, 234, 255, 0.1)',
-                                                        minHeight: '200px'
+                                                        minHeight: '200px',
+                                                        '@media (max-width: 768px)': {
+                                                            p: 2,
+                                                            minHeight: 'auto',
+                                                        },
                                                     }}>
                                                         <Typography
                                                             variant="body1"
-                                                            sx={{ color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.7, mb: 2 }}
+                                                            sx={{
+                                                                color: 'rgba(255, 255, 255, 0.9)',
+                                                                lineHeight: 1.7,
+                                                                mb: 2,
+                                                                '@media (max-width: 768px)': {
+                                                                    fontSize: '0.95rem',
+                                                                },
+                                                            }}
                                                             dangerouslySetInnerHTML={{
                                                                 __html: renderContentWithSources(section.content, section.sources)
                                                             }}
@@ -1549,7 +1783,7 @@ const NewsPortal: React.FC = () => {
                                                     </Box>
                                                 </Box>
 
-                                                {/* Individual Analysis Box - 固定寬度 */}
+                                                {/* Individual Analysis Box - Moves to bottom on mobile */}
                                                 <Box sx={{
                                                     width: '350px',
                                                     minWidth: '350px',
@@ -1567,7 +1801,12 @@ const NewsPortal: React.FC = () => {
                                                         border: '1px solid rgba(0, 234, 255, 0.3)',
                                                         boxShadow: '0 4px 20px rgba(0, 234, 255, 0.1)',
                                                         backdropFilter: 'blur(10px)',
-                                                        minHeight: '200px'
+                                                        minHeight: '200px',
+                                                        '@media (max-width: 768px)': {
+                                                            p: 2,
+                                                            minHeight: 'auto',
+                                                            marginTop: 2,
+                                                        },
                                                     }}>
 
                                                         {/* Sentiment Score */}
@@ -1693,6 +1932,44 @@ const NewsPortal: React.FC = () => {
                                             {selectedArticle.conclusion}
                                         </Typography>
                                     </Box>
+
+                                    {/* Debug Timeline Logs */}
+                                    {(() => {
+                                        console.log('NewsPortal Timeline Debug:');
+                                        console.log('selectedArticle:', selectedArticle);
+                                        console.log('selectedArticle.timeline:', selectedArticle.timeline);
+                                        console.log('timeline keys:', Object.keys(selectedArticle.timeline || {}));
+                                        console.log('timeline length:', Object.keys(selectedArticle.timeline || {}).length);
+                                        console.log('Should show timeline?', Object.keys(selectedArticle.timeline || {}).length > 0);
+                                        return null; // This just runs the logs without rendering anything
+                                    })()}
+
+                                    {/* Timeline Section */}
+                                    {selectedArticle.timeline && Object.keys(selectedArticle.timeline).length > 0 && (
+                                        <Box sx={{ mt: 6, p: 4, background: 'rgba(138, 43, 226, 0.05)', borderRadius: 2, border: '1px solid rgba(138, 43, 226, 0.2)' }}>
+                                            <Typography variant="h6" sx={{ color: '#8a2be2', mb: 3, fontWeight: 600 }}>
+                                                ⏰ Timeline
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                {Object.entries(selectedArticle.timeline).map(([time, event], index) => (
+                                                    <Box key={index} sx={{
+                                                        p: 3,
+                                                        background: 'rgba(138, 43, 226, 0.1)',
+                                                        borderRadius: 2,
+                                                        border: '1px solid rgba(138, 43, 226, 0.2)',
+                                                        borderLeft: '4px solid #8a2be2'
+                                                    }}>
+                                                        <Typography variant="subtitle2" sx={{ color: '#8a2be2', mb: 1, fontWeight: 600 }}>
+                                                            {new Date(time).toLocaleString()}
+                                                        </Typography>
+                                                        <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.6 }}>
+                                                            {event}
+                                                        </Typography>
+                                                    </Box>
+                                                ))}
+                                            </Box>
+                                        </Box>
+                                    )}
                                 </Box>
                             </Box>
                         </Container>
@@ -1802,6 +2079,138 @@ const NewsPortal: React.FC = () => {
                     </Box>
                 </Container>
             </FooterSection>
+
+            {/* Video Modal */}
+            <Modal
+                open={isVideoModalOpen}
+                onClose={() => setIsVideoModalOpen(false)}
+                closeAfterTransition
+                BackdropComponent={Backdrop}
+                BackdropProps={{
+                    timeout: 500,
+                    sx: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        backdropFilter: 'blur(10px)',
+                    },
+                }}
+            >
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '90vw',
+                        maxWidth: '1200px',
+                        height: '90vh',
+                        maxHeight: '800px',
+                        background: 'linear-gradient(135deg, rgba(13, 13, 13, 0.95) 0%, rgba(26, 26, 46, 0.95) 100%)',
+                        borderRadius: '16px',
+                        border: '2px solid rgba(0, 234, 255, 0.3)',
+                        boxShadow: '0 20px 60px rgba(0, 234, 255, 0.2)',
+                        backdropFilter: 'blur(20px)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                        '@media (max-width: 768px)': {
+                            width: '95vw',
+                            height: '95vh',
+                        },
+                    }}
+                >
+                    {/* Modal Header */}
+                    <Box
+                        sx={{
+                            p: 2,
+                            borderBottom: '1px solid rgba(0, 234, 255, 0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: 'rgba(0, 234, 255, 0.05)',
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <VideoLibrary sx={{ color: '#00eaff', fontSize: '24px' }} />
+                            <Typography variant="h6" sx={{ color: '#00eaff', fontWeight: 600 }}>
+                                AI News Summary Video
+                            </Typography>
+                        </Box>
+                        <IconButton
+                            onClick={() => setIsVideoModalOpen(false)}
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                '&:hover': {
+                                    color: '#00eaff',
+                                    backgroundColor: 'rgba(0, 234, 255, 0.1)',
+                                },
+                            }}
+                        >
+                            <Close />
+                        </IconButton>
+                    </Box>
+
+                    {/* Video Player */}
+                    <Box
+                        sx={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            p: 2,
+                            background: 'rgba(0, 0, 0, 0.3)',
+                        }}
+                    >
+                        <video
+                            ref={videoRef}
+                            controls
+                            autoPlay
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                borderRadius: '8px',
+                                objectFit: 'contain',
+                            }}
+                            onError={(e) => {
+                                console.error('Video error:', e);
+                            }}
+                        >
+                            <source src={`${STATIC_URL}/summary-video/summary.mp4`} type="video/mp4" />
+                            Your browser does not support the video tag.
+                        </video>
+                    </Box>
+
+                    {/* Modal Footer */}
+                    <Box
+                        sx={{
+                            p: 2,
+                            borderTop: '1px solid rgba(0, 234, 255, 0.2)',
+                            background: 'rgba(0, 234, 255, 0.05)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                        }}
+                    >
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                            📹 AI-generated summary of recent news events
+                        </Typography>
+                        <Button
+                            variant="outlined"
+                            startIcon={<FullscreenExit />}
+                            onClick={() => setIsVideoModalOpen(false)}
+                            sx={{
+                                color: '#00eaff',
+                                borderColor: 'rgba(0, 234, 255, 0.3)',
+                                '&:hover': {
+                                    borderColor: '#00eaff',
+                                    backgroundColor: 'rgba(0, 234, 255, 0.1)',
+                                },
+                            }}
+                        >
+                            Close
+                        </Button>
+                    </Box>
+                </Box>
+            </Modal>
         </Box>
     );
 };

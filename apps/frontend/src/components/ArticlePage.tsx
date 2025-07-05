@@ -438,12 +438,8 @@ interface ArticleData {
 }
 
 const ArticlePage: React.FC = () => {
-    console.log('🚨 ArticlePage Component Loaded - This should always show!');
-    console.log('🌐 Current URL:', window.location.href);
 
     const { groupId, date } = useParams<{ groupId: string; date: string }>();
-    console.log('📋 URL Params - groupId:', groupId, 'date:', date);
-
     const [article, setArticle] = useState<ArticleData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -860,24 +856,26 @@ const ArticlePage: React.FC = () => {
                 </BodyContent>
 
                 {/* Timeline */}
-                {Object.keys(article.timeline).length > 0 && (
-                    <>
-                        <Divider sx={{ my: 3 }} />
-                        <SectionTitle variant="h3">Timeline</SectionTitle>
-                        <Grid container spacing={2}>
-                            {Object.entries(article.timeline).map(([time, event], index) => (
-                                <Grid item xs={12} key={index}>
-                                    <Card variant="outlined" sx={{ p: 2 }}>
-                                        <Typography variant="subtitle2" color="primary" gutterBottom>
-                                            {new Date(time).toLocaleString()}
-                                        </Typography>
-                                        <Typography variant="body2">{event}</Typography>
-                                    </Card>
-                                </Grid>
-                            ))}
-                        </Grid>
-                    </>
-                )}
+                {(() => {
+                    return Object.keys(article.timeline || {}).length > 0;
+                })() && (
+                        <>
+                            <Divider sx={{ my: 3 }} />
+                            <SectionTitle variant="h3">Timeline</SectionTitle>
+                            <Grid container spacing={2}>
+                                {Object.entries(article.timeline).map(([time, event], index) => (
+                                    <Grid item xs={12} key={index}>
+                                        <Card variant="outlined" sx={{ p: 2 }}>
+                                            <Typography variant="subtitle2" color="primary" gutterBottom>
+                                                {new Date(time).toLocaleString()}
+                                            </Typography>
+                                            <Typography variant="body2">{event}</Typography>
+                                        </Card>
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        </>
+                    )}
 
                 {/* Sources */}
                 <Divider sx={{ my: 3 }} />
