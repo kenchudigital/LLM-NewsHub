@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  backend:
+    image: msp24053-registry-vpc.cn-hongkong.cr.aliyuncs.com/fyp-demo/newsense-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=false
+      - ALLOWED_HOSTS=*
+    volumes:
+      - ./static:/app/static:ro
+      - ./data:/app/data:ro
+      - ./knowledge.txt:/app/knowledge.txt:ro
+    env_file:
+      - ../.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    image: msp24053-registry.cn-hongkong.cr.aliyuncs.com/fyp-demo/newsense-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    environment:
+      - REACT_APP_API_URL=http://msp24053-registry-vpc.cn-hongkong.cr.aliyuncs.com/fyp-demo/newsense-backend:8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: ai-newssense
