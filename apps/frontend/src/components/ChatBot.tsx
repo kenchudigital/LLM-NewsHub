@@ -31,6 +31,18 @@ const ChatContainer = styled(Paper)(({ theme }) => ({
     boxShadow: '0 8px 32px rgba(255, 106, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
     overflow: 'hidden',
     position: 'relative',
+
+    // Mobile responsive adjustments
+    [theme.breakpoints.down('sm')]: {
+        maxHeight: '400px',
+        borderRadius: '8px',
+    },
+
+    '@media (max-width: 360px)': {
+        maxHeight: '350px',
+        borderRadius: '6px',
+    },
+
     '&::before': {
         content: '""',
         position: 'absolute',
@@ -54,6 +66,15 @@ const ChatHeader = styled(Box)(({ theme }) => ({
     borderBottom: '1px solid rgba(255, 106, 0, 0.3)',
     position: 'relative',
     zIndex: 1,
+
+    // Mobile responsive adjustments
+    [theme.breakpoints.down('sm')]: {
+        padding: '0.75rem',
+    },
+
+    '@media (max-width: 360px)': {
+        padding: '0.5rem',
+    },
 }));
 
 const MessageBubble = styled(Paper)<{ sender: 'user' | 'bot' }>(({ theme, sender }) => ({
@@ -72,6 +93,17 @@ const MessageBubble = styled(Paper)<{ sender: 'user' | 'bot' }>(({ theme, sender
     boxShadow: sender === 'user'
         ? '0 4px 16px rgba(0, 234, 255, 0.2)'
         : '0 4px 16px rgba(255, 106, 0, 0.1)',
+
+    // Mobile responsive adjustments
+    [theme.breakpoints.down('sm')]: {
+        padding: '10px 14px',
+        borderRadius: '12px',
+    },
+
+    '@media (max-width: 360px)': {
+        padding: '8px 12px',
+        borderRadius: '10px',
+    },
 }));
 
 interface QuickActionChipProps {
@@ -101,6 +133,8 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
         background: 'rgba(13, 13, 13, 0.6)',
         color: 'rgba(255, 255, 255, 0.9)',
         borderRadius: '12px',
+        minWidth: 0, // Allow flex shrinking
+        width: '100%',
         '& fieldset': {
             borderColor: 'rgba(255, 106, 0, 0.3)',
         },
@@ -110,9 +144,19 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
         '&.Mui-focused fieldset': {
             borderColor: '#ff6a00',
         },
+        // Mobile responsive adjustments
+        '@media (max-width: 600px)': {
+            borderRadius: '8px',
+        },
+        '@media (max-width: 360px)': {
+            borderRadius: '6px',
+        },
     },
-    '& .MuiInputBase-input::placeholder': {
-        color: 'rgba(255, 255, 255, 0.5)',
+    '& .MuiInputBase-input': {
+        minWidth: 0, // Allow text to wrap properly
+        '&::placeholder': {
+            color: 'rgba(255, 255, 255, 0.5)',
+        },
     },
 }));
 
@@ -290,7 +334,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            position: 'relative'
+            position: 'relative',
+            width: '100%',
+            minWidth: 0, // Prevent flex items from overflowing
+            overflow: 'hidden', // Ensure content doesn't overflow
         }}>
             {/* Context Indicator */}
             {currentGroupId && (
@@ -306,10 +353,27 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                         '& .MuiAlert-icon': {
                             color: '#00eaff',
                         },
+                        // Mobile responsive adjustments
+                        '@media (max-width: 600px)': {
+                            m: 0.75,
+                            fontSize: '0.7rem',
+                            borderRadius: '6px',
+                            '& .MuiAlert-icon': {
+                                fontSize: '1rem',
+                            },
+                        },
+                        '@media (max-width: 360px)': {
+                            m: 0.5,
+                            fontSize: '0.65rem',
+                            borderRadius: '4px',
+                            '& .MuiAlert-icon': {
+                                fontSize: '0.9rem',
+                            },
+                        },
                     }}
                     icon={<AutoAwesome fontSize="small" />}
                 >
-                    🤖 AI connected • Analyzing article data
+                    AI connected • Analyzing article data
                 </Alert>
             )}
 
@@ -322,8 +386,21 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 1,
+                    // Mobile responsive adjustments
+                    '@media (max-width: 600px)': {
+                        p: 0.75,
+                        gap: 0.75,
+                    },
+                    '@media (max-width: 360px)': {
+                        p: 0.5,
+                        gap: 0.5,
+                    },
                     '&::-webkit-scrollbar': {
                         width: '6px',
+                        // Mobile responsive adjustments
+                        '@media (max-width: 600px)': {
+                            width: '4px',
+                        },
                     },
                     '&::-webkit-scrollbar-track': {
                         background: 'rgba(255, 106, 0, 0.1)',
@@ -345,6 +422,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                             alignSelf: message.sender === 'user' ? 'flex-end' : 'flex-start',
                             maxWidth: '85%',
                             p: 0,
+                            // Mobile responsive adjustments
+                            '@media (max-width: 600px)': {
+                                maxWidth: '90%',
+                            },
+                            '@media (max-width: 360px)': {
+                                maxWidth: '95%',
+                            },
                         }}
                     >
                         <MessageBubble
@@ -364,16 +448,43 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                                                 lineHeight: 1.4,
                                                 whiteSpace: 'pre-line',
                                                 color: message.sender === 'user' ? 'white' : 'rgba(255, 255, 255, 0.9)',
+                                                // Mobile responsive adjustments
+                                                '@media (max-width: 600px)': {
+                                                    fontSize: '0.85rem',
+                                                    lineHeight: 1.3,
+                                                },
+                                                '@media (max-width: 360px)': {
+                                                    fontSize: '0.8rem',
+                                                    lineHeight: 1.2,
+                                                },
                                             }}
                                         >
                                             {message.text}
                                         </Typography>
-                                        <Box sx={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Box sx={{
+                                            marginTop: '8px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            // Mobile responsive adjustments
+                                            '@media (max-width: 600px)': {
+                                                marginTop: '6px',
+                                                flexWrap: 'wrap',
+                                                gap: '4px',
+                                            },
+                                        }}>
                                             <Typography
                                                 variant="caption"
                                                 sx={{
                                                     color: message.sender === 'user' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.6)',
                                                     fontSize: '0.7rem',
+                                                    // Mobile responsive adjustments
+                                                    '@media (max-width: 600px)': {
+                                                        fontSize: '0.65rem',
+                                                    },
+                                                    '@media (max-width: 360px)': {
+                                                        fontSize: '0.6rem',
+                                                    },
                                                 }}
                                             >
                                                 {message.timestamp.toLocaleTimeString()}
@@ -387,12 +498,29 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                                                         fontSize: '0.6rem',
                                                         bgcolor: message.sender === 'user' ? 'rgba(255,255,255,0.2)' : 'rgba(255, 106, 0, 0.3)',
                                                         color: 'white',
+                                                        // Mobile responsive adjustments
+                                                        '@media (max-width: 600px)': {
+                                                            height: 14,
+                                                            fontSize: '0.55rem',
+                                                        },
+                                                        '@media (max-width: 360px)': {
+                                                            height: 12,
+                                                            fontSize: '0.5rem',
+                                                        },
                                                     }}
                                                 />
                                             )}
                                             {message.hasChart && (
                                                 <Chip
-                                                    icon={<ChartIcon sx={{ fontSize: '0.6rem' }} />}
+                                                    icon={<ChartIcon sx={{
+                                                        fontSize: '0.6rem',
+                                                        '@media (max-width: 600px)': {
+                                                            fontSize: '0.55rem',
+                                                        },
+                                                        '@media (max-width: 360px)': {
+                                                            fontSize: '0.5rem',
+                                                        },
+                                                    }} />}
                                                     label="Chart"
                                                     size="small"
                                                     sx={{
@@ -400,6 +528,15 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                                                         fontSize: '0.6rem',
                                                         bgcolor: '#e63946',
                                                         color: 'white',
+                                                        // Mobile responsive adjustments
+                                                        '@media (max-width: 600px)': {
+                                                            height: 14,
+                                                            fontSize: '0.55rem',
+                                                        },
+                                                        '@media (max-width: 360px)': {
+                                                            height: 12,
+                                                            fontSize: '0.5rem',
+                                                        },
                                                     }}
                                                 />
                                             )}
@@ -411,7 +548,18 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                     </ListItem>
                 ))}
                 {isLoading && (
-                    <ListItem sx={{ alignSelf: 'flex-start', maxWidth: '85%', p: 0 }}>
+                    <ListItem sx={{
+                        alignSelf: 'flex-start',
+                        maxWidth: '85%',
+                        p: 0,
+                        // Mobile responsive adjustments
+                        '@media (max-width: 600px)': {
+                            maxWidth: '90%',
+                        },
+                        '@media (max-width: 360px)': {
+                            maxWidth: '95%',
+                        },
+                    }}>
                         <MessageBubble
                             elevation={0}
                             sender="bot"
@@ -421,7 +569,17 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                                 animation: 'pulse 2s infinite',
                             }}
                         >
-                            <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'rgba(255, 255, 255, 0.9)' }}>
+                            <Typography variant="body2" sx={{
+                                fontStyle: 'italic',
+                                color: 'rgba(255, 255, 255, 0.9)',
+                                // Mobile responsive adjustments
+                                '@media (max-width: 600px)': {
+                                    fontSize: '0.85rem',
+                                },
+                                '@media (max-width: 360px)': {
+                                    fontSize: '0.8rem',
+                                },
+                            }}>
                                 AI is analyzing and generating response...
                             </Typography>
                         </MessageBubble>
@@ -454,7 +612,20 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
             )}
 
             {/* Input Area */}
-            <Box sx={{ p: 2, display: 'flex', gap: 1 }}>
+            <Box sx={{
+                p: 2,
+                display: 'flex',
+                gap: 1,
+                // Mobile responsive adjustments
+                '@media (max-width: 600px)': {
+                    p: 1.5,
+                    gap: 0.75,
+                },
+                '@media (max-width: 360px)': {
+                    p: 1,
+                    gap: 0.5,
+                },
+            }}>
                 <StyledTextField
                     fullWidth
                     variant="outlined"
@@ -466,6 +637,25 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                     size="small"
                     multiline
                     maxRows={3}
+                    sx={{
+                        // Mobile responsive adjustments
+                        '@media (max-width: 600px)': {
+                            '& .MuiOutlinedInput-root': {
+                                fontSize: '0.9rem',
+                            },
+                            '& .MuiInputBase-input::placeholder': {
+                                fontSize: '0.85rem',
+                            },
+                        },
+                        '@media (max-width: 360px)': {
+                            '& .MuiOutlinedInput-root': {
+                                fontSize: '0.85rem',
+                            },
+                            '& .MuiInputBase-input::placeholder': {
+                                fontSize: '0.8rem',
+                            },
+                        },
+                    }}
                 />
                 <IconButton
                     onClick={handleSend}
@@ -483,33 +673,105 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                         '&:disabled': {
                             background: 'rgba(255, 106, 0, 0.2)',
                             color: 'rgba(255, 255, 255, 0.3)',
-                        }
+                        },
+                        // Mobile responsive adjustments
+                        '@media (max-width: 600px)': {
+                            width: '36px',
+                            height: '36px',
+                        },
+                        '@media (max-width: 360px)': {
+                            width: '32px',
+                            height: '32px',
+                        },
                     }}
                 >
-                    <SendIcon />
+                    <SendIcon sx={{
+                        '@media (max-width: 600px)': {
+                            fontSize: '1.1rem',
+                        },
+                        '@media (max-width: 360px)': {
+                            fontSize: '1rem',
+                        },
+                    }} />
                 </IconButton>
             </Box>
 
             {/* Quick Actions */}
-            <Box sx={{ px: 2, pb: 2, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+            <Box sx={{
+                px: 2,
+                pb: 2,
+                display: 'flex',
+                gap: 0.5,
+                flexWrap: 'wrap',
+                // Mobile responsive adjustments
+                '@media (max-width: 600px)': {
+                    px: 1.5,
+                    pb: 1.5,
+                    gap: 0.4,
+                },
+                '@media (max-width: 360px)': {
+                    px: 1,
+                    pb: 1,
+                    gap: 0.3,
+                },
+            }}>
                 <QuickActionChip
                     label="Summarize"
                     size="small"
                     onClick={() => sendQuickMessage("Can you summarize this article?")}
+                    sx={{
+                        // Mobile responsive adjustments
+                        '@media (max-width: 600px)': {
+                            fontSize: '0.7rem',
+                            height: '28px',
+                        },
+                        '@media (max-width: 360px)': {
+                            fontSize: '0.65rem',
+                            height: '26px',
+                        },
+                    }}
                 />
                 <QuickActionChip
                     label="Key Points"
                     size="small"
                     onClick={() => sendQuickMessage("What are the key points?")}
+                    sx={{
+                        // Mobile responsive adjustments
+                        '@media (max-width: 600px)': {
+                            fontSize: '0.7rem',
+                            height: '28px',
+                        },
+                        '@media (max-width: 360px)': {
+                            fontSize: '0.65rem',
+                            height: '26px',
+                        },
+                    }}
                 />
                 {currentGroupId && (
                     <QuickActionChip
-                        icon={<ChartIcon sx={{ fontSize: '0.7rem' }} />}
+                        icon={<ChartIcon sx={{
+                            fontSize: '0.7rem',
+                            '@media (max-width: 600px)': {
+                                fontSize: '0.6rem',
+                            },
+                            '@media (max-width: 360px)': {
+                                fontSize: '0.55rem',
+                            },
+                        }} />}
                         label="Chart"
                         size="small"
                         onClick={() => sendQuickMessage("Create a sentiment chart")}
                         sx={{
                             background: 'linear-gradient(45deg, #ff6a00, #00eaff)',
+                            // Mobile responsive adjustments
+                            '@media (max-width: 600px)': {
+                                fontSize: '0.7rem',
+                                height: '28px',
+                            },
+                            '@media (max-width: 360px)': {
+                                fontSize: '0.65rem',
+                                height: '26px',
+                            },
                         }}
                     />
                 )}

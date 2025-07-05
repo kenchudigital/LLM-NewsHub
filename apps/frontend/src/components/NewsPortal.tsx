@@ -426,6 +426,37 @@ const ChatContainer = styled(Box)(({ theme }) => ({
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+
+        // Tablet responsive
+        [theme.breakpoints.down('md')]: {
+            width: '350px',
+            height: '450px',
+            right: theme.spacing(2),
+            bottom: theme.spacing(2),
+        },
+
+        // Mobile responsive - full width
+        [theme.breakpoints.down('sm')]: {
+            width: '100vw',
+            height: '80vh',
+            maxHeight: '500px',
+            right: 0,
+            bottom: 0,
+            left: 0,
+            borderRadius: '16px 16px 0 0', // Only round top corners
+            transform: 'none',
+        },
+
+        // Very small mobile screens
+        '@media (max-width: 360px)': {
+            width: '100vw',
+            height: '75vh',
+            maxHeight: '400px',
+            right: 0,
+            bottom: 0,
+            left: 0,
+            borderRadius: '12px 12px 0 0', // Only round top corners
+        },
     },
 }));
 
@@ -2207,7 +2238,7 @@ const NewsPortal: React.FC = () => {
                                                         {/* Publication Date */}
                                                         <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid rgba(0, 234, 255, 0.1)' }}>
                                                             <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.75rem' }}>
-                                                                📅 Published: {section.date || 'Unknown'}
+                                                                Published: {section.date || 'Unknown'}
                                                             </Typography>
                                                         </Box>
                                                     </Box>
@@ -2219,29 +2250,18 @@ const NewsPortal: React.FC = () => {
                                     {/* Conclusion */}
                                     <Box sx={{ mt: 6, p: 4, background: 'rgba(255, 106, 0, 0.05)', borderRadius: 2, border: '1px solid rgba(255, 106, 0, 0.2)' }}>
                                         <Typography variant="h6" sx={{ color: '#ff6a00', mb: 2, fontWeight: 600 }}>
-                                            📝 Conclusion
+                                            Conclusion
                                         </Typography>
                                         <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.7 }}>
                                             {selectedArticle.conclusion}
                                         </Typography>
                                     </Box>
 
-                                    {/* Debug Timeline Logs */}
-                                    {(() => {
-                                        console.log('NewsPortal Timeline Debug:');
-                                        console.log('selectedArticle:', selectedArticle);
-                                        console.log('selectedArticle.timeline:', selectedArticle.timeline);
-                                        console.log('timeline keys:', Object.keys(selectedArticle.timeline || {}));
-                                        console.log('timeline length:', Object.keys(selectedArticle.timeline || {}).length);
-                                        console.log('Should show timeline?', Object.keys(selectedArticle.timeline || {}).length > 0);
-                                        return null; // This just runs the logs without rendering anything
-                                    })()}
-
                                     {/* Timeline Section */}
                                     {selectedArticle.timeline && Object.keys(selectedArticle.timeline).length > 0 && (
                                         <Box sx={{ mt: 6, p: 4, background: 'rgba(138, 43, 226, 0.05)', borderRadius: 2, border: '1px solid rgba(138, 43, 226, 0.2)' }}>
                                             <Typography variant="h6" sx={{ color: '#8a2be2', mb: 3, fontWeight: 600 }}>
-                                                ⏰ Timeline
+                                                Timeline
                                             </Typography>
                                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                                 {Object.entries(selectedArticle.timeline).map(([time, event], index) => (
@@ -2293,7 +2313,12 @@ const NewsPortal: React.FC = () => {
                         height: '500px',
                         display: 'flex',
                         flexDirection: 'column',
-                        position: 'relative'
+                        position: 'relative',
+                        // Mobile responsive
+                        '@media (max-width: 768px)': {
+                            width: '100%',
+                            height: '100%',
+                        },
                     }}>
                         <Box sx={{
                             p: 2,
@@ -2301,19 +2326,76 @@ const NewsPortal: React.FC = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            background: 'rgba(0, 234, 255, 0.05)'
+                            background: 'rgba(0, 234, 255, 0.05)',
+                            flexShrink: 0, // Prevent header from shrinking
+                            minHeight: '60px', // Ensure minimum height
+                            // Mobile responsive
+                            '@media (max-width: 768px)': {
+                                p: 1.5,
+                                minHeight: '56px',
+                            },
+                            '@media (max-width: 480px)': {
+                                p: 1,
+                                minHeight: '52px',
+                            },
                         }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <SmartToy sx={{ color: '#00eaff', fontSize: '24px' }} />
-                                <Typography variant="h6" sx={{ color: '#00eaff', fontWeight: 600 }}>
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                minWidth: 0, // Allow text to shrink
+                                flex: 1,
+                            }}>
+                                <SmartToy sx={{
+                                    color: '#00eaff',
+                                    fontSize: '24px',
+                                    flexShrink: 0,
+                                    // Mobile responsive
+                                    '@media (max-width: 480px)': {
+                                        fontSize: '20px',
+                                    },
+                                }} />
+                                <Typography variant="h6" sx={{
+                                    color: '#00eaff',
+                                    fontWeight: 600,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    // Mobile responsive
+                                    '@media (max-width: 480px)': {
+                                        fontSize: '1rem',
+                                    },
+                                    '@media (max-width: 360px)': {
+                                        fontSize: '0.9rem',
+                                    },
+                                }}>
                                     AI Assistant
                                 </Typography>
                             </Box>
-                            <ChatToggleButton onClick={toggleChat} size="small">
-                                <Remove />
+                            <ChatToggleButton
+                                onClick={toggleChat}
+                                size="small"
+                                sx={{
+                                    flexShrink: 0,
+                                    // Mobile responsive
+                                    '@media (max-width: 480px)': {
+                                        width: '32px',
+                                        height: '32px',
+                                    },
+                                }}
+                            >
+                                <Remove sx={{
+                                    '@media (max-width: 480px)': {
+                                        fontSize: '1rem',
+                                    },
+                                }} />
                             </ChatToggleButton>
                         </Box>
-                        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                        <Box sx={{
+                            flex: 1,
+                            overflow: 'hidden',
+                            minHeight: 0, // Important for flex child with overflow
+                        }}>
                             <ChatBot
                                 currentGroupId={selectedGroupId || ''}
                                 currentDate={selectedDate}
