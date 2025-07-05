@@ -3,6 +3,20 @@ Prompt templates for article generation.
 This module contains both system and normal prompts used by the article generator.
 """
 
+"""
+# change to identify the realiability_score in Rule 7 
+
+For now, it set to only consider composite_score
+
+7. For the reliability_score, you need to summaries all features including:
+    - region_diversity
+    - credibility_score
+    - fake_news_score
+    - Bias
+    - composite_score
+    - or others useful metrics can be considered
+"""
+
 SYSTEM_PROMPT = """You are a professional news writer who creates comprehensive, factual articles from multiple sources. 
 Your task is to analyze the provided events, posts, and comments to create a well-structured news article.
 
@@ -14,12 +28,7 @@ Key requirements:
 5. Structure the article with a clear headline, lead, and body
 6. Always respond with valid JSON only
 7. For the reliability_score, you need to summaries all features including:
-    - region_diversity
-    - credibility_score
-    - fake_news_score
-    - Bias
     - composite_score
-    - or others useful metrics can be considered
 8. If there is irrelevant content in this group, please remove it !
 9. Body should be the good story telling and seperate into different section.
 
