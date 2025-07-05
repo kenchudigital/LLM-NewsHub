@@ -1,3 +1,4 @@
+import config from '../config';
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Box,
@@ -136,8 +137,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
     const [conversationMemory, setConversationMemory] = useState<string[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Fix API URL with fallback
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    // Fix API URL - use config.API_URL (empty for proxy) instead of localhost fallback
+    const API_URL = config.API_URL;
 
     // Auto-scroll to bottom when new messages arrive
     const scrollToBottom = () => {

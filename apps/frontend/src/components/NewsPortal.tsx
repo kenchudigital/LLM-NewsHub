@@ -1,3 +1,4 @@
+import config from '../config';
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Box,
@@ -894,9 +895,21 @@ const NewsPortal: React.FC = () => {
         console.log('selectedGroupId changed:', selectedGroupId);
     }, [selectedGroupId]);
 
+    // Update the NewsPortal.tsx to add debugging
+    // Find line 897 and replace it with:
+
+    console.log('=== API URL DEBUG ===');
+    console.log('process.env.REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+    console.log('config.API_URL:', config.API_URL);
+    console.log('typeof process.env.REACT_APP_API_URL:', typeof process.env.REACT_APP_API_URL);
+    console.log('All REACT_APP env vars:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP')));
+
     // Fix API URL - provide fallback for development
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-    const STATIC_URL = `${API_URL}/static`;
+    const API_URL = config.API_URL;
+    const STATIC_URL = config.STATIC_URL;
+    console.log('Final API_URL being used:', API_URL);
+    console.log('=== END DEBUG ===');
+
 
     // Fixed categories - no longer need to fetch from API
     const fixedCategories = {
@@ -993,7 +1006,7 @@ const NewsPortal: React.FC = () => {
 
     const fetchDates = async () => {
         try {
-            const response = await axios.get(`${API_URL}/api/news/dates`);
+            const response = await axios.get(`${API_URL}/api/news/dates`); // Changed from /api/dates
             setAvailableDates(response.data.dates || []);
         } catch (error) {
             console.error('Error fetching dates:', error);

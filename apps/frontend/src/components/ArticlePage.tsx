@@ -1,3 +1,4 @@
+import config from '../config';
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Box,
@@ -452,7 +453,7 @@ const ArticlePage: React.FC = () => {
     const [audioAvailable, setAudioAvailable] = useState(true);
     const [audioError, setAudioError] = useState(false);
     const [expandedMeta, setExpandedMeta] = useState(false);
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    const API_URL = config.API_URL || 'http://localhost:8000';
     const STATIC_URL = `${API_URL}/static`;
 
     useEffect(() => {

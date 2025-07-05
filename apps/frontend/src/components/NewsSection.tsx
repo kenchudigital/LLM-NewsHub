@@ -1,3 +1,4 @@
+import config from '../config';
 import React, { useState, useEffect } from 'react';
 import {
     Box,
@@ -122,7 +123,7 @@ const NewsSection: React.FC<NewsWithDetailProps> = ({ onArticleSelect, onChartAd
     const [charts, setCharts] = useState<ChartData[]>([]);
     const articlesPerPage = 3;
     const navigate = useNavigate();
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    const API_URL = config.API_URL || 'http://localhost:8000';
     const STATIC_URL = `${API_URL}/static`;
 
     useEffect(() => {

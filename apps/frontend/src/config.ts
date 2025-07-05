@@ -1,8 +1,7 @@
 
 const config = {
     // API Base URL - change this based on your deployment
-    API_URL: '/api', // For nginx proxy setup
-    // API_URL: 'http://localhost:8000', // For direct backend connection
+    API_URL: '', // For Docker with nginx proxy - use relative path
 
     // Static files URL
     get STATIC_URL() {

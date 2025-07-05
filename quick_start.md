@@ -152,6 +152,13 @@ cp deployment/summary/resource/summary.mp4 apps/static/summary-video/summary.mp4
 cd apps && docker compose up
 ```
 
+## Backup Deploy
+
+```bash
+docker-compose up -d
+ngrok http http://localhost:3000
+```
+
 ## Potential issue
 
 ```bash
