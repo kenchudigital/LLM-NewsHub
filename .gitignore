@@ -71,7 +71,7 @@ apps/static/video/*
 apps/static/graph/*
 apps/static/articles/*
 apps/static/resources/*
-
+apps/static/summary-video/*
 
 
 # Node.js / React

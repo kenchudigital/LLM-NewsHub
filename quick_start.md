@@ -87,6 +87,13 @@ python generate_article/gather_resource.py --date "2025-06-21"
 python generate_article/category_arrange.py --date "2025-06-21"
 ```
 
+## Summary
+
+```
+# output: 
+python
+```
+
 ## Evaluate
 
 ```bash
@@ -104,6 +111,8 @@ python deployment/image/main.py --date "2025-06-21"
 
 ```bash
 python deployment/audio/main.py --date "2025-06-21"
+# for summary
+python deployment/audio/tts.py --speech deployment/summary/summary.txt --output deployment/summary/summary.mp3 --voice us
 ```
 
 ## Video - Wav2Lip (Manually) - need another environment due to python package compatibility 
@@ -112,14 +121,29 @@ python deployment/audio/main.py --date "2025-06-21"
 conda create -n wav2lip python=3.8
 ```
 
-```bash
-# python deployment/wav2lip.py --date "2025-06-21"
-```
-
 ## Migrate
 
 ```bash
 python migrate.py --date "2025-06-21"
+```
+
+## Summary Video
+
+```bash
+# python deployment/wav2lip.py --date "2025-06-21"
+
+# summary
+cd deployment/Wav2Lip && python inference.py \
+  --checkpoint_path checkpoints/wav2lip_gan.pth \
+  --face samples/face.mp4 \
+  --audio ../summary/summary.mp3 \
+  --outfile ../summary/resource/news_report.mp4
+
+# python deployment/summary/add_logo.py # for first time only
+python deployment/summary/merge_video.py
+python deployment/summary/add_bg_music.py
+# Copy summary.mp4 to the apps static directory
+cp deployment/summary/resource/summary.mp4 apps/static/summary-video/summary.mp4
 ```
 
 ## UI

@@ -34,7 +34,7 @@ def process_json_files(date_str: str):
     if not json_files:
         raise FileNotFoundError(f"No group JSON files found in {article_dir}")
     
-    print(f"📁 Found {len(json_files)} group files to process")
+    print(f"Found {len(json_files)} group files to process")
     
     # Initialize TTS
     tts = SimpleNewsTTS()
