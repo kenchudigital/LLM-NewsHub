@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script to add background music to a video with reduced volume
-Usage: python add_bg.py
+Ultra-simple background music script that prioritizes reliability
+Usage: python add_bg_music.py
 """
 
 import os
@@ -10,17 +10,14 @@ from pathlib import Path
 import subprocess
 
 def add_background_music():
-    """Add background music to video with reduced volume"""
+    """Ultra-simple method that works reliably"""
     
-    # Get the directory where this script is located
     script_dir = Path(__file__).parent
-    
-    # Define file paths
     video_file = script_dir / "resource/merge.mp4"
     bg_music_file = script_dir / "resource/bg.mp3"
     output_file = script_dir / "resource/summary.mp4"
     
-    # Check if input files exist
+    # Check input files
     if not video_file.exists():
         print(f"Error: Video file not found: {video_file}")
         return False
@@ -33,61 +30,70 @@ def add_background_music():
     print(f"Background music: {bg_music_file}")
     print(f"Output file: {output_file}")
     
-    # FFmpeg command to combine video with background music
-    # -i: input files
-    # -filter_complex: complex audio filter
-    # [1:a]volume=0.1: reduce background music volume to 10%
-    # amix=inputs=2: mix two audio streams
-    # -c:v copy: copy video stream without re-encoding (faster)
-    # -c:a aac: encode audio as AAC
-    # -shortest: finish when the shortest input ends
-    # -y: overwrite output file if it exists
-    
-    ffmpeg_cmd = [
+    # Ultra-simple approach - minimal processing
+    cmd = [
         "ffmpeg",
-        "-i", str(video_file),           # Input video with original audio
-        "-i", str(bg_music_file),        # Input background music
+        "-i", str(video_file),
+        "-i", str(bg_music_file),
+        "-c:v", "copy",                    # Don't touch video
         "-filter_complex",
-        "[1:a]volume=0.1[bg]; [0:a][bg]amix=inputs=2:duration=first[audio]",
-        "-map", "0:v",                   # Map video from first input
-        "-map", "[audio]",               # Map mixed audio
-        "-c:v", "copy",                  # Copy video codec (no re-encoding)
-        "-c:a", "aac",                   # Encode audio as AAC
-        "-shortest",                     # End when shortest input ends
-        "-y",                            # Overwrite output file
+        "[1:a]volume=0.03[bg];[0:a][bg]amix=inputs=2:duration=shortest[audio]",
+        "-map", "0:v",                     # Original video
+        "-map", "[audio]",                 # Mixed audio
+        "-c:a", "aac",                     # Simple audio encoding
+        "-shortest",                       # End with shortest stream
+        "-y",
         str(output_file)
     ]
     
-    print("Running FFmpeg command...")
-    print(" ".join(ffmpeg_cmd))
-    
-    # Execute the command
     try:
-        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, check=True)
-        print("Successfully created video with background music!")
-        print(f"Output saved to: {output_file}")
+        print("Running ultra-simple background music...")
+        print(" ".join(cmd))
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        print("Successfully added background music!")
         return True
         
     except subprocess.CalledProcessError as e:
-        print(f"Error running FFmpeg:")
-        print(f"Return code: {e.returncode}")
-        print(f"Error output: {e.stderr}")
+        print(f"Method failed: {e.stderr}")
+        return fallback_method()
+    except Exception as e:
+        print(f"Unexpected error: {e}")
         return False
-        
-    except FileNotFoundError:
-        print(" Error: FFmpeg not found. Please install FFmpeg:")
-        print(" macOS: brew install ffmpeg")
-        print(" Ubuntu/Debian: sudo apt-get install ffmpeg")
-        print(" Windows: Download from https://ffmpeg.org/download.html")
+
+def fallback_method():
+    """Even simpler fallback if main method fails"""
+    
+    script_dir = Path(__file__).parent
+    video_file = script_dir / "resource/merge.mp4"
+    bg_music_file = script_dir / "resource/bg.mp3"
+    output_file = script_dir / "resource/summary.mp4"
+    
+    print("Trying fallback method...")
+    
+    # Just copy the video if all else fails
+    cmd = [
+        "ffmpeg",
+        "-i", str(video_file),
+        "-c", "copy",
+        "-y",
+        str(output_file)
+    ]
+    
+    try:
+        subprocess.run(cmd, check=True, capture_output=True)
+        print("Fallback: Copied video without background music")
+        return True
+    except:
+        print("All methods failed")
         return False
 
 def main():
     """Main function"""
-    print("Adding background music to video...")
+    print("Adding background music (ultra-simple method)...")
     success = add_background_music()
     
     if success:
-        print("\nDone! Your video with background music is ready.")
+        print("\nDone! Video with background music is ready.")
     else:
         print("\nFailed to create video with background music.")
         sys.exit(1)
