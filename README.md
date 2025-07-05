@@ -26,9 +26,7 @@ git submodule add https://github.com/Rudrabha/Wav2Lip
 
 ![Demo](z-img/demo.gif)
 
-## TODO LIST
-
-Potential Optimize:
+## Potential Optimize
 
 0. Easy
     - Hot Topics
@@ -46,7 +44,7 @@ Potential Optimize:
     - Voice Fine Tuning
 6. UI
     - Create Top Hot News according to the Social Media data
-    - Avatar Chatbot ?
+    - Avatar Chatbot
     - Video (Wip2Lip) for Summary of today ?
 7. Git
     - Create CODEOWNERS file
