@@ -113,3 +113,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+apps/frontend/src/components/ChatBot_backup.tsx
+apps/frontend/src/components/ChatBot_copy.tsx
