@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
 import logging
-from .routers import news, dates  # Remove chat import
+from .routers import news, dates, config
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -54,6 +54,7 @@ app.mount("/static", StaticFiles(directory="../static"), name="static")
 app.include_router(news.router, prefix="/api", tags=["news"])
 # app.include_router(chat.router, prefix="/api", tags=["chat"])  # Comment out chat router
 app.include_router(dates.router, prefix="/api", tags=["dates"])
+app.include_router(config.router, prefix="/api/config", tags=["config"])
 
 @app.get("/")
 async def root():

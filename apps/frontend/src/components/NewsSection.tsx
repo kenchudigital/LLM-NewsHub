@@ -17,6 +17,9 @@ import {
     Chip,
     Divider,
     LinearProgress,
+    FormControlLabel,
+    Switch,
+    Tooltip,
 } from '@mui/material';
 import { Search as SearchIcon, Schedule, LocationOn, TrendingUp, Warning, ThumbUp, ThumbDown } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
@@ -118,6 +121,7 @@ const NewsSection: React.FC<NewsWithDetailProps> = ({ onArticleSelect, onChartAd
     const [selectedGroupId, setSelectedGroupId] = useState<string>('');
     const [category, setCategory] = useState('all');
     const [search, setSearch] = useState('');
+    const [fuzzySearch, setFuzzySearch] = useState(false); // Add fuzzy search state
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [charts, setCharts] = useState<ChartData[]>([]);
@@ -131,10 +135,13 @@ const NewsSection: React.FC<NewsWithDetailProps> = ({ onArticleSelect, onChartAd
             try {
                 console.log('Fetching articles in NewsSection...');
                 const response = await axios.get(`${API_URL}/api/news`, {
-                    params: { category: category !== 'all' ? category : undefined, search },
+                    params: {
+                        category: category !== 'all' ? category : undefined,
+                        search,
+                        fuzzy: fuzzySearch // Add fuzzy parameter
+                    },
                 });
                 console.log('Articles response in NewsSection:', response.data);
-                // The response data has a 'news' property containing the array of articles
                 setArticles(response.data.news || []);
 
                 // Auto-select first article if none selected
@@ -148,7 +155,7 @@ const NewsSection: React.FC<NewsWithDetailProps> = ({ onArticleSelect, onChartAd
         };
 
         fetchArticles();
-    }, [category, search]);
+    }, [category, search, fuzzySearch]); // Add fuzzySearch to dependencies
 
     const fetchArticleDetail = async (groupId: string, date: string) => {
         try {
@@ -209,6 +216,10 @@ const NewsSection: React.FC<NewsWithDetailProps> = ({ onArticleSelect, onChartAd
         setCharts(prev => prev.filter(chart => chart.id !== chartId));
     };
 
+    const handleFuzzySearchToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setFuzzySearch(event.target.checked);
+    };
+
     const filteredArticles = articles.slice(
         (page - 1) * articlesPerPage,
         page * articlesPerPage
@@ -258,9 +269,59 @@ const NewsSection: React.FC<NewsWithDetailProps> = ({ onArticleSelect, onChartAd
                                 <SearchIcon />
                             </InputAdornment>
                         ),
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <Tooltip title="Enable fuzzy search to find results with typos and similar words">
+                                    <FormControlLabel
+                                        control={
+                                            <Switch
+                                                checked={fuzzySearch}
+                                                onChange={handleFuzzySearchToggle}
+                                                size="small"
+                                                color="primary"
+                                            />
+                                        }
+                                        label="Fuzzy"
+                                        sx={{
+                                            margin: 0,
+                                            '& .MuiFormControlLabel-label': {
+                                                fontSize: '0.8rem',
+                                                paddingLeft: '4px'
+                                            }
+                                        }}
+                                    />
+                                </Tooltip>
+                            </InputAdornment>
+                        ),
                     }}
                     sx={{ mb: 2 }}
                 />
+
+                {/* Search Status Indicator */}
+                {search && (
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 2,
+                        p: 1,
+                        background: '#f8f9fa',
+                        border: '1px solid #e9ecef',
+                        borderRadius: '4px'
+                    }}>
+                        <SearchIcon sx={{ color: '#e63946', fontSize: '1rem' }} />
+                        <Typography variant="body2" color="text.secondary">
+                            {fuzzySearch ? 'Fuzzy search' : 'Exact search'} for:
+                            <strong style={{ color: '#e63946', marginLeft: '4px' }}>
+                                "{search}"
+                            </strong>
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+                            {articles.length} results
+                        </Typography>
+                    </Box>
+                )}
+
                 <Tabs
                     value={category}
                     onChange={handleCategoryChange}

@@ -4,6 +4,14 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 from ..core.config import settings
 
+# Add fuzzywuzzy import
+try:
+    from fuzzywuzzy import fuzz
+    FUZZYWUZZY_AVAILABLE = True
+except ImportError:
+    FUZZYWUZZY_AVAILABLE = False
+    print("Warning: fuzzywuzzy not installed. Fuzzy search will not work.")
+
 logger = logging.getLogger(__name__)
 
 class NewsService:
@@ -93,7 +101,56 @@ class NewsService:
         
         return max(date_dirs)
     
-    def get_filtered_news(self, date: Optional[str] = None, category: Optional[str] = None, search: Optional[str] = None) -> List[Dict]:
+    def fuzzy_search_articles(self, articles: List[Dict], search_term: str, threshold: int = 70) -> List[Dict]:
+        """
+        Perform fuzzy search on articles
+        """
+        if not search_term or not FUZZYWUZZY_AVAILABLE:
+            return articles
+        
+        search_term = search_term.lower()
+        scored_articles = []
+        
+        for article in articles:
+            # Get text fields to search
+            headline = article.get('headline', '').lower()
+            content = article.get('content', '').lower()
+            summary = article.get('summary', '').lower()
+            
+            # Calculate fuzzy scores for each field using different algorithms
+            scores = []
+            
+            # 1. Partial ratio - best for finding substrings with typos
+            scores.append(fuzz.partial_ratio(search_term, headline))
+            scores.append(fuzz.partial_ratio(search_term, content))
+            scores.append(fuzz.partial_ratio(search_term, summary))
+            
+            # 2. Token sort ratio - good for word order independence
+            scores.append(fuzz.token_sort_ratio(search_term, headline))
+            scores.append(fuzz.token_sort_ratio(search_term, content))
+            scores.append(fuzz.token_sort_ratio(search_term, summary))
+            
+            # 3. Check individual words in the text
+            all_text = f"{headline} {content} {summary}"
+            words = all_text.split()
+            for word in words:
+                if len(word) > 2:  # Only check words longer than 2 characters
+                    word_score = fuzz.ratio(search_term, word.lower())
+                    scores.append(word_score)
+            
+            # Take the highest score
+            max_score = max(scores) if scores else 0
+            
+            # If score meets threshold, add to results
+            if max_score >= threshold:
+                scored_articles.append((article, max_score))
+        
+        # Sort by score (highest first)
+        scored_articles.sort(key=lambda x: x[1], reverse=True)
+        
+        return [article for article, score in scored_articles]
+
+    def get_filtered_news(self, date: Optional[str] = None, category: Optional[str] = None, search: Optional[str] = None, fuzzy: bool = False) -> List[Dict]:
         """Get news articles with optional filtering"""
         # Use most recent date if no date specified
         if not date:
@@ -123,14 +180,24 @@ class NewsService:
                 if article.get("category", "").lower() != category.lower():
                     continue
             
-            # Apply search filter
-            if search:
-                search_lower = search.lower()
-                if not any(search_lower in str(article.get(field, "")).lower() 
-                          for field in ["headline", "lead", "category"]):
-                    continue
-            
             news_list.append(news_item)
+        
+        # Apply search filter
+        if search:
+            if fuzzy and FUZZYWUZZY_AVAILABLE:
+                # Use fuzzy search with lower threshold for better typo tolerance
+                news_list = self.fuzzy_search_articles(news_list, search, threshold=70)
+                print(f"Fuzzy search for '{search}' returned {len(news_list)} results")
+            else:
+                # Use exact search (existing logic)
+                search_lower = search.lower()
+                filtered_list = []
+                for news_item in news_list:
+                    if any(search_lower in str(news_item.get(field, "")).lower() 
+                          for field in ["headline", "content", "summary"]):
+                        filtered_list.append(news_item)
+                news_list = filtered_list
+                print(f"Exact search for '{search}' returned {len(news_list)} results")
         
         return news_list
     

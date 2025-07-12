@@ -28,33 +28,6 @@ git submodule add https://github.com/Rudrabha/Wav2Lip
 
 ## Potential Optimize
 
-0. Easy
-    - Hot Topics
-    - Time Weights (when grouping, use other date data)
-    - Score Usage
-1. Clustering
-    - Instead of Kmeans such as DBSCAN
-2. Fake New Classification
-    - Add the content pattern as Feature
-3. Generation Approach
-4. Evaluation Methods
-    - Any Metrics Need  
-5. Deployment
-    - Improve the image prompt for Stable Diffusion
-    - Voice Fine Tuning
-6. UI
-    - Create Top Hot News according to the Social Media data
-    - Avatar Chatbot
-    - Video (Wip2Lip) for Summary of today ?
-7. Git
-    - Create CODEOWNERS file
-
-FEAT:
-- GNN 
-    - Search
-    - Fact Check
-    - Recommendation
-
 [SO DIFFICULT TO HANDLE `GRAPH` IN `JAVASCRIPT` BUT HANDLE IN `PYTHON SCRIPT` NEED TO PROVIDE THE FIXED CONTENT OR CREATE THE `API CALL` FOR THAT]
 
 ## My env

@@ -18,9 +18,9 @@ class ChatService:
         base_prompt = """You are an AI news assistant for AI NewsSense, an advanced news analysis platform. You have access to comprehensive news data including articles, social media posts, comments, and detailed publisher information.
 
 CAPABILITIES:
-1. 📰 Article Analysis: Provide summaries, explain key points, analyze sentiment and credibility
-2. 🔍 Source Verification: Help users understand publisher credibility, bias, and regional diversity  
-3. 📊 Data Insights: Analyze metrics like sentiment scores, fake news probability, engagement patterns
+1. Article Analysis: Provide summaries, explain key points, analyze sentiment and credibility
+2. Source Verification: Help users understand publisher credibility, bias, and regional diversity  
+3. Data Insights: Analyze metrics like sentiment scores, fake news probability, engagement patterns
 4. 🌍 Context Awareness: Use article context, social media data, and conversation history
 5. 📈 Trend Analysis: Identify patterns across publishers, regions, and time
 
@@ -41,14 +41,14 @@ AVAILABLE DATA INCLUDES:
 - Engagement metrics and comment analysis"""
 
         if article_context:
-            base_prompt += f"\n\n📋 CURRENT ARTICLE DATA:\n{article_context}"
+            base_prompt += f"\n\nCURRENT ARTICLE DATA:\n{article_context}"
         
         if rag_context:
-            base_prompt += f"\n\n📚 ADDITIONAL RESEARCH DATA:\n{rag_context}"
+            base_prompt += f"\n\nADDITIONAL RESEARCH DATA:\n{rag_context}"
         
         base_prompt += """
 
-💡 INSTRUCTIONS:
+INSTRUCTIONS:
 - Always reference specific data points when making claims
 - Explain methodology behind credibility and sentiment scores
 - Highlight publisher diversity and potential bias
@@ -62,6 +62,7 @@ AVAILABLE DATA INCLUDES:
         try:
             user_message = message.message.strip()
             context = message.context
+            preferred_model = message.model if hasattr(message, 'model') else None
             
             if not user_message:
                 return ChatResponse(
@@ -102,8 +103,8 @@ AVAILABLE DATA INCLUDES:
             # Add current user message last
             messages.append({"role": "user", "content": user_message})
             
-            # Get LLM response
-            llm_response = await self.llm_service.get_response(messages)
+            # Get LLM response with preferred model
+            llm_response = await self.llm_service.get_response(messages, preferred_model)
             ai_response = llm_response.get("response", "I'm sorry, I couldn't process your request.")
             
             # Store conversation in memory
@@ -116,11 +117,13 @@ AVAILABLE DATA INCLUDES:
             if len(self.conversation_memory[session_id]) > 10:
                 self.conversation_memory[session_id] = self.conversation_memory[session_id][-10:]
             
-            logger.info(f"Chat processed successfully for session {session_id}")
+            logger.info(f"Chat processed successfully for session {session_id} using {llm_response.get('provider', 'Unknown')} {llm_response.get('model', 'Unknown')}")
             
             return ChatResponse(
                 response=ai_response,
-                chart_data=None  # Chart functionality removed for simplicity
+                chart_data=None,  # Chart functionality removed for simplicity
+                model_used=llm_response.get("model", "Unknown"),
+                provider_used=llm_response.get("provider", "Unknown")
             )
             
         except Exception as e:

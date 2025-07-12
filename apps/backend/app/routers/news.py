@@ -3,6 +3,9 @@ from typing import List, Optional
 import json
 from pathlib import Path
 from datetime import datetime
+from fuzzywuzzy import fuzz, process
+from typing import List, Optional, Tuple
+import re
 
 router = APIRouter()
 
@@ -125,6 +128,78 @@ def load_news_data(date: Optional[str] = None) -> List[dict]:
         print(f"Traceback: {traceback.format_exc()}")
         return []
 
+def fuzzy_search_articles(articles: List[dict], search_term: str, threshold: int = 50) -> List[dict]:
+    """
+    Enhanced fuzzy search on articles with better typo tolerance
+    """
+    if not search_term:
+        return articles
+    
+    search_term = search_term.lower().strip()
+    scored_articles = []
+    
+    print(f"Fuzzy searching for: '{search_term}' with threshold {threshold}")
+    
+    for article in articles:
+        # Get text fields to search
+        headline = article.get('headline', '').lower()
+        content = article.get('content', '').lower()
+        summary = article.get('summary', '').lower()
+        
+        scores = []
+        
+        # Check headline with multiple algorithms
+        if headline:
+            scores.append(fuzz.ratio(search_term, headline))
+            scores.append(fuzz.partial_ratio(search_term, headline))
+            scores.append(fuzz.token_sort_ratio(search_term, headline))
+            scores.append(fuzz.token_set_ratio(search_term, headline))
+            
+            # Check individual words in headline
+            headline_words = headline.split()
+            for word in headline_words:
+                if len(word) > 2:
+                    word_score = fuzz.ratio(search_term, word)
+                    scores.append(word_score)
+                    # Also check partial match within words
+                    if len(search_term) > 3:
+                        scores.append(fuzz.partial_ratio(search_term, word))
+        
+        # Check content with multiple algorithms
+        if content:
+            scores.append(fuzz.partial_ratio(search_term, content))
+            scores.append(fuzz.token_set_ratio(search_term, content))
+            
+            # Check individual words in content (first 100 words to avoid slow performance)
+            content_words = content.split()[:100]
+            for word in content_words:
+                if len(word) > 2:
+                    word_score = fuzz.ratio(search_term, word)
+                    if word_score > 70:  # Only add high-scoring word matches
+                        scores.append(word_score)
+        
+        # Check summary
+        if summary:
+            scores.append(fuzz.partial_ratio(search_term, summary))
+            scores.append(fuzz.token_set_ratio(search_term, summary))
+        
+        # Get the highest score
+        max_score = max(scores) if scores else 0
+        
+        print(f"Article '{headline[:50]}...' scored {max_score}")
+        
+        # If score meets threshold, add to results
+        if max_score >= threshold:
+            scored_articles.append((article, max_score))
+    
+    # Sort by score (highest first)
+    scored_articles.sort(key=lambda x: x[1], reverse=True)
+    
+    result_articles = [article for article, score in scored_articles]
+    print(f"Fuzzy search returned {len(result_articles)} results")
+    
+    return result_articles
+
 @router.get("/news")
 async def get_news(
     page: int = Query(1, ge=1),
@@ -132,7 +207,8 @@ async def get_news(
     search: Optional[str] = None,
     category: Optional[str] = None,
     date: Optional[str] = None,
-    sort: str = "newest"
+    sort: str = "newest",
+    fuzzy: bool = Query(False, description="Enable fuzzy search")  # New parameter
 ):
     """
     Get news articles with filtering and pagination.
@@ -147,13 +223,18 @@ async def get_news(
         
         # Apply search filter
         if search:
-            search = search.lower()
-            news_data = [
-                article for article in news_data
-                if search in article.get('headline', '').lower() or
-                   search in article.get('content', '').lower() or
-                   search in article.get('summary', '').lower()
-            ]
+            if fuzzy:
+                # Use fuzzy search
+                news_data = fuzzy_search_articles(news_data, search, threshold=50)
+            else:
+                # Use exact search (existing logic)
+                search = search.lower()
+                news_data = [
+                    article for article in news_data
+                    if search in article.get('headline', '').lower() or
+                       search in article.get('content', '').lower() or
+                       search in article.get('summary', '').lower()
+                ]
             print(f"After search filter: {len(news_data)} articles")
         
         # Apply category filter
@@ -382,3 +463,39 @@ async def get_article(date: str, group_id: str):
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Failed to fetch article") 
+
+@router.get("/test-fuzzy")
+async def test_fuzzy_search(
+    search: str = Query(..., description="Search term to test"),
+    threshold: int = Query(50, description="Fuzzy search threshold")
+):
+    """Test fuzzy search functionality"""
+    try:
+        from fuzzywuzzy import fuzz
+        
+        # Test with some sample data
+        test_articles = [
+            {"headline": "Trump announces new policy", "content": "Former president Trump...", "summary": "Trump policy news"},
+            {"headline": "Biden administration updates", "content": "President Biden...", "summary": "Biden news"},
+            {"headline": "Technology advances", "content": "New tech developments...", "summary": "Tech news"},
+        ]
+        
+        results = fuzzy_search_articles(test_articles, search, threshold)
+        
+        return {
+            "search_term": search,
+            "threshold": threshold,
+            "results_count": len(results),
+            "results": [{"headline": r["headline"], "score": "calculated"} for r in results],
+            "fuzzywuzzy_available": True,
+            "test_scores": {
+                "Trump vs trump": fuzz.ratio("trump", "trump"),
+                "Trump vs trunp": fuzz.ratio("trump", "trunp"),
+                "Trump vs trumpp": fuzz.ratio("trump", "trumpp"),
+            }
+        }
+    except ImportError:
+        return {
+            "error": "fuzzywuzzy not installed",
+            "fuzzywuzzy_available": False
+        } 

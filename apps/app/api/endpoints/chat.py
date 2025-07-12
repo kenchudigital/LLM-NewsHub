@@ -25,4 +25,19 @@ async def chat_with_ai(message: ChatMessage) -> ChatResponse:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to process chat message")
+
+@router.get("/models")
+async def get_available_models():
+    """Get available LLM models"""
+    try:
+        models = llm_service.get_available_models()
+        default_model = llm_service.get_default_model()
+        
+        return {
+            "models": models,
+            "default": default_model,
+            "total": len(models)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to get available models")
  

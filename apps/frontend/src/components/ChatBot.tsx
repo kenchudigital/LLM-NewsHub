@@ -12,11 +12,71 @@ import {
     Divider,
     Chip,
     Alert,
+    Menu,
+    MenuItem,
+    ListItemIcon,
+    Select,
+    FormControl,
+    InputLabel,
 } from '@mui/material';
-import { Send as SendIcon, Article as ArticleIcon, Memory as MemoryIcon, BarChart as ChartIcon, AutoAwesome } from '@mui/icons-material';
+import {
+    Send as SendIcon,
+    Article as ArticleIcon,
+    Memory as MemoryIcon,
+    BarChart as ChartIcon,
+    AutoAwesome,
+    Settings as SettingsIcon,
+    Delete as DeleteIcon,
+    Psychology as PsychologyIcon,
+    AccountTree as KnowledgeIcon,
+    Cloud as CloudIcon,
+    AutoFixHigh as GeminiIcon,
+    Search as PerplexityIcon,
+} from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
 import { ChartData } from './ChartWidget';
+
+// Available AI models - matching the LLM service
+const AVAILABLE_MODELS = [
+    {
+        id: 'gpt-4o-mini',
+        name: 'GPT-4o Mini',
+        displayName: 'GPT-4o Mini',
+        provider: 'OpenAI',
+        icon: PsychologyIcon
+    },
+    {
+        id: 'qwen-turbo',
+        name: 'Qwen Turbo',
+        displayName: 'Qwen Turbo',
+        provider: 'Alibaba',
+        icon: CloudIcon
+    },
+    {
+        id: 'gemini-1.5-flash',
+        name: 'Gemini 1.5 Flash',
+        displayName: 'Gemini 1.5 Flash',
+        provider: 'Gemini',
+        icon: GeminiIcon
+    },
+    {
+        id: 'llama-3.1-sonar-small-128k-online',
+        name: 'llama 3.1 Sonar',
+        displayName: 'lama 3.1 Sonar',
+        provider: 'Perplexity',
+        icon: PerplexityIcon
+    },
+    {
+        id: 'knowledge-graph',
+        name: 'Knowledge Graph',
+        displayName: 'Knowledge Graph',
+        provider: 'Knowledge',
+        icon: KnowledgeIcon
+    },
+];
+
+const DEFAULT_MODEL = AVAILABLE_MODELS[0];
 
 // Styled components for high-tech theme
 const ChatContainer = styled(Paper)(({ theme }) => ({
@@ -58,7 +118,7 @@ const ChatContainer = styled(Paper)(({ theme }) => ({
 
 const ChatHeader = styled(Box)(({ theme }) => ({
     padding: '1rem',
-    background: 'linear-gradient(135deg, rgba(255, 106, 0, 0.8) 0%, rgba(255, 106, 0, 0.6) 100%)',
+    background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(26, 26, 26, 0.8) 100%)',
     color: 'white',
     display: 'flex',
     alignItems: 'center',
@@ -160,6 +220,23 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
     },
 }));
 
+const StyledMenu = styled(Menu)(({ theme }) => ({
+    '& .MuiPaper-root': {
+        background: 'linear-gradient(135deg, rgba(13, 13, 13, 0.95) 0%, rgba(26, 26, 46, 0.9) 100%)',
+        border: '1px solid rgba(255, 106, 0, 0.3)',
+        borderRadius: '8px',
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 8px 32px rgba(255, 106, 0, 0.15)',
+        color: 'rgba(255, 255, 255, 0.9)',
+        minWidth: '200px',
+    },
+    '& .MuiMenuItem-root': {
+        '&:hover': {
+            background: 'rgba(255, 106, 0, 0.1)',
+        },
+    },
+}));
+
 interface Message {
     id: number;
     text: string;
@@ -167,6 +244,7 @@ interface Message {
     timestamp: Date;
     context?: string;
     hasChart?: boolean;
+    hasAnalysis?: boolean;
 }
 
 interface ChatBotProps {
@@ -174,15 +252,284 @@ interface ChatBotProps {
     currentDate?: string;
 }
 
+interface PendingRequest {
+    id: string;
+    userMessage: Message;
+    timestamp: Date;
+    context: any;
+    model: string;
+}
+
 const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [conversationMemory, setConversationMemory] = useState<string[]>([]);
+    const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
+    const [userIP, setUserIP] = useState<string>('');
+    const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const backgroundProcessingInterval = useRef<NodeJS.Timeout | null>(null);
 
     // Fix API URL - use config.API_URL (empty for proxy) instead of localhost fallback
     const API_URL = config.API_URL;
+
+    // Get user IP address
+    const getUserIP = async () => {
+        try {
+            const response = await axios.get('https://api.ipify.org?format=json');
+            return response.data.ip;
+        } catch (error) {
+            console.error('Error getting IP:', error);
+            return 'localhost';
+        }
+    };
+
+    // LocalStorage utility functions
+    const getStorageKey = (key: string) => `chatbot_${userIP}_${key}`;
+
+    const saveConversation = (messages: Message[]) => {
+        if (userIP) {
+            localStorage.setItem(getStorageKey('conversation'), JSON.stringify(messages));
+        }
+    };
+
+    const loadConversation = (): Message[] => {
+        if (userIP) {
+            const saved = localStorage.getItem(getStorageKey('conversation'));
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    return parsed.map((msg: any) => ({
+                        ...msg,
+                        timestamp: new Date(msg.timestamp),
+                    }));
+                } catch (error) {
+                    console.error('Error parsing saved conversation:', error);
+                }
+            }
+        }
+        return [];
+    };
+
+    const saveSelectedModel = (model: typeof DEFAULT_MODEL) => {
+        if (userIP) {
+            localStorage.setItem(getStorageKey('selectedModel'), JSON.stringify(model));
+        }
+    };
+
+    const loadSelectedModel = (): typeof DEFAULT_MODEL => {
+        if (userIP) {
+            const saved = localStorage.getItem(getStorageKey('selectedModel'));
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (error) {
+                    console.error('Error parsing saved model:', error);
+                }
+            }
+        }
+        return DEFAULT_MODEL;
+    };
+
+    // Background processing functions
+    const savePendingRequest = (request: PendingRequest) => {
+        if (userIP) {
+            const existingRequests = loadPendingRequests();
+            const updatedRequests = [...existingRequests, request];
+            localStorage.setItem(getStorageKey('pendingRequests'), JSON.stringify(updatedRequests));
+        }
+    };
+
+    const loadPendingRequests = (): PendingRequest[] => {
+        if (userIP) {
+            const saved = localStorage.getItem(getStorageKey('pendingRequests'));
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    return parsed.map((req: any) => ({
+                        ...req,
+                        timestamp: new Date(req.timestamp),
+                        userMessage: {
+                            ...req.userMessage,
+                            timestamp: new Date(req.userMessage.timestamp),
+                        },
+                    }));
+                } catch (error) {
+                    console.error('Error parsing pending requests:', error);
+                }
+            }
+        }
+        return [];
+    };
+
+    const removePendingRequest = (requestId: string) => {
+        if (userIP) {
+            const existingRequests = loadPendingRequests();
+            const updatedRequests = existingRequests.filter(req => req.id !== requestId);
+            localStorage.setItem(getStorageKey('pendingRequests'), JSON.stringify(updatedRequests));
+        }
+    };
+
+    const clearOldPendingRequests = () => {
+        if (userIP) {
+            const existingRequests = loadPendingRequests();
+            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+            const validRequests = existingRequests.filter(req => new Date(req.timestamp) > oneHourAgo);
+            localStorage.setItem(getStorageKey('pendingRequests'), JSON.stringify(validRequests));
+        }
+    };
+
+    const processPendingRequest = async (request: PendingRequest) => {
+        try {
+            const response = await axios.post(`${API_URL}/api/chat`, {
+                message: request.userMessage.text,
+                model: request.model,
+                context: request.context,
+            });
+
+            let botResponseText = response.data.response;
+            let chartGenerated = false;
+
+            // Check if the backend returned chart data
+            if (response.data.chart_data) {
+                const chartData: ChartData = response.data.chart_data;
+                // Add chart to the page if component is still mounted
+                if ((window as any).addChart) {
+                    (window as any).addChart(chartData);
+                    chartGenerated = true;
+                }
+            }
+
+            const botMessage: Message = {
+                id: Date.now() + 1,
+                text: botResponseText,
+                sender: 'bot',
+                timestamp: new Date(),
+                hasChart: chartGenerated,
+            };
+
+            // Update conversation in localStorage
+            const currentConversation = loadConversation();
+            const updatedConversation = [...currentConversation, botMessage];
+            saveConversation(updatedConversation);
+
+            // Update messages state if component is still mounted
+            setMessages(prev => [...prev, botMessage]);
+
+            // Update conversation memory
+            setConversationMemory(prev => [...prev.slice(-4), response.data.response]);
+
+            // Remove from pending requests
+            removePendingRequest(request.id);
+
+            return true;
+        } catch (error) {
+            console.error('Error processing background request:', error);
+
+            // Create error message
+            const errorMessage: Message = {
+                id: Date.now() + 1,
+                text: 'Sorry, I encountered an error while processing your request in the background. Please try again.',
+                sender: 'bot',
+                timestamp: new Date(),
+            };
+
+            // Update conversation in localStorage
+            const currentConversation = loadConversation();
+            const updatedConversation = [...currentConversation, errorMessage];
+            saveConversation(updatedConversation);
+
+            // Update messages state if component is still mounted
+            setMessages(prev => [...prev, errorMessage]);
+
+            // Remove from pending requests
+            removePendingRequest(request.id);
+
+            return false;
+        }
+    };
+
+    const checkAndProcessPendingRequests = async () => {
+        const pendingRequests = loadPendingRequests();
+
+        for (const request of pendingRequests) {
+            await processPendingRequest(request);
+        }
+    };
+
+    // Initialize IP and load data
+    useEffect(() => {
+        const initializeChat = async () => {
+            const ip = await getUserIP();
+            setUserIP(ip);
+        };
+        initializeChat();
+    }, []);
+
+    // Load conversation and model when IP is available
+    useEffect(() => {
+        if (userIP) {
+            const savedConversation = loadConversation();
+            const savedModel = loadSelectedModel();
+
+            if (savedConversation.length > 0) {
+                setMessages(savedConversation);
+                setConversationMemory(savedConversation
+                    .filter(msg => msg.sender === 'user')
+                    .slice(-5)
+                    .map(msg => msg.text)
+                );
+            } else {
+                // Initialize with welcome message if no saved conversation
+                const welcomeMessage: Message = {
+                    id: Date.now(),
+                    text: "Hello! I'm your AI news assistant !",
+                    sender: 'bot',
+                    timestamp: new Date(),
+                };
+                setMessages([welcomeMessage]);
+            }
+
+            setSelectedModel(savedModel);
+        }
+    }, [userIP]);
+
+    // Save conversation whenever messages change
+    useEffect(() => {
+        if (userIP && messages.length > 0) {
+            saveConversation(messages);
+        }
+    }, [messages, userIP]);
+
+    // Save model whenever it changes
+    useEffect(() => {
+        if (userIP && selectedModel) {
+            saveSelectedModel(selectedModel);
+        }
+    }, [selectedModel, userIP]);
+
+    // Background processing setup
+    useEffect(() => {
+        if (userIP) {
+            // Clear old pending requests (older than 1 hour)
+            clearOldPendingRequests();
+
+            // Check for pending requests on mount
+            checkAndProcessPendingRequests();
+
+            // Set up interval to check for pending requests every 5 seconds
+            backgroundProcessingInterval.current = setInterval(() => {
+                checkAndProcessPendingRequests();
+            }, 5000);
+        }
+
+        return () => {
+            if (backgroundProcessingInterval.current) {
+                clearInterval(backgroundProcessingInterval.current);
+            }
+        };
+    }, [userIP]);
 
     // Auto-scroll to bottom when new messages arrive
     const scrollToBottom = () => {
@@ -193,25 +540,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
         scrollToBottom();
     }, [messages]);
 
-    // Initialize with welcome message
-    useEffect(() => {
-        if (messages.length === 0) {
-            const welcomeMessage: Message = {
-                id: Date.now(),
-                text: "Hello! I'm your AI news assistant powered by advanced language models. I can help you understand articles, provide summaries, analyze data, and create visualizations. What would you like to know?",
-                sender: 'bot',
-                timestamp: new Date(),
-            };
-            setMessages([welcomeMessage]);
-        }
-    }, []);
-
     // Update context when article changes
     useEffect(() => {
         if (currentGroupId && currentDate) {
             const contextMessage: Message = {
                 id: Date.now(),
-                text: `I'm now analyzing the article you're reading (ID: ${currentGroupId}). I have access to the full article content, sources, and related resources. I can create charts, provide analysis, or answer any questions about this specific article!`,
+                text: `keep article: (ID: ${currentGroupId}) in LLM CONTEXT now`,
                 sender: 'bot',
                 timestamp: new Date(),
                 context: `Article Context: ${currentGroupId} from ${currentDate}`,
@@ -236,12 +570,31 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
         setConversationMemory(prev => [...prev.slice(-4), input.trim()]);
 
         const userInput = input.trim();
+        const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Create pending request
+        const pendingRequest: PendingRequest = {
+            id: requestId,
+            userMessage,
+            timestamp: new Date(),
+            context: {
+                currentGroupId,
+                currentDate,
+                conversationHistory: conversationMemory,
+            },
+            model: selectedModel.id,
+        };
+
+        // Save pending request for background processing
+        savePendingRequest(pendingRequest);
+
         setInput('');
         setIsLoading(true);
 
         try {
             const response = await axios.post(`${API_URL}/api/chat`, {
                 message: userInput,
+                model: selectedModel.id,
                 context: {
                     currentGroupId,
                     currentDate,
@@ -251,6 +604,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
 
             let botResponseText = response.data.response;
             let chartGenerated = false;
+            let analysisGenerated = false;
 
             // Check if the backend returned chart data
             if (response.data.chart_data) {
@@ -263,12 +617,19 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                 }
             }
 
+            // Check if this is a 5W1H analysis response
+            const analysisKeywords = ['Who:', 'What:', 'When:', 'Where:', 'Why:', 'How:', '5W1H'];
+            analysisGenerated = analysisKeywords.some(keyword =>
+                botResponseText.includes(keyword)
+            );
+
             const botMessage: Message = {
                 id: Date.now() + 1,
                 text: botResponseText,
                 sender: 'bot',
                 timestamp: new Date(),
                 hasChart: chartGenerated,
+                hasAnalysis: analysisGenerated,
             };
 
             setMessages((prev) => [...prev, botMessage]);
@@ -276,15 +637,18 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
             // Add bot response to memory
             setConversationMemory(prev => [...prev.slice(-4), response.data.response]);
 
+            // Remove from pending requests since we got the response
+            removePendingRequest(requestId);
+
         } catch (error) {
             console.error('Error sending message:', error);
-            let errorMessage = 'Sorry, I encountered an error. Please try again later.';
+            let errorMessage = 'Sorry, I encountered an error. The request will continue processing in the background.';
 
             if (axios.isAxiosError(error)) {
                 if (error.response?.status === 500) {
-                    errorMessage = 'The AI service is currently unavailable. Please check if the API keys are configured properly.';
+                    errorMessage = 'The AI service is currently unavailable. The request will continue processing in the background.';
                 } else if (error.response?.data?.detail) {
-                    errorMessage = `Error: ${error.response.data.detail}`;
+                    errorMessage = `Error: ${error.response.data.detail}. The request will continue processing in the background.`;
                 }
             }
 
@@ -295,6 +659,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                 timestamp: new Date(),
             };
             setMessages((prev) => [...prev, errorMsg]);
+
+            // Don't remove from pending requests - let background processing handle it
         } finally {
             setIsLoading(false);
         }
@@ -310,6 +676,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
     const clearConversation = () => {
         setMessages([]);
         setConversationMemory([]);
+
+        // Clear from localStorage
+        if (userIP) {
+            localStorage.removeItem(getStorageKey('conversation'));
+        }
+
         const welcomeMessage: Message = {
             id: Date.now(),
             text: "Conversation cleared! How can I help you with the current article?",
@@ -317,6 +689,33 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
             timestamp: new Date(),
         };
         setMessages([welcomeMessage]);
+        setSettingsAnchorEl(null);
+    };
+
+    const handleSettingsClick = (event: React.MouseEvent<HTMLElement>) => {
+        setSettingsAnchorEl(event.currentTarget);
+    };
+
+    const handleSettingsClose = () => {
+        setSettingsAnchorEl(null);
+    };
+
+    const handleModelChange = (model: typeof DEFAULT_MODEL) => {
+        setSelectedModel(model);
+        setSettingsAnchorEl(null);
+    };
+
+    const getModelIcon = (model: typeof DEFAULT_MODEL) => {
+        const IconComponent = model.icon;
+        return <IconComponent sx={{ color: 'rgba(255, 255, 255, 0.9)' }} />;
+    };
+
+    const sendAnalysisRequest = () => {
+        const analysisPrompt = "Analyze using 5W1H: Who, What, When, Where, Why, How";
+        setInput(analysisPrompt);
+        setTimeout(() => {
+            handleSend();
+        }, 100);
     };
 
     const sendQuickMessage = (message: string) => {
@@ -336,9 +735,100 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
             flexDirection: 'column',
             position: 'relative',
             width: '100%',
-            minWidth: 0, // Prevent flex items from overflowing
-            overflow: 'hidden', // Ensure content doesn't overflow
+            minWidth: 0,
+            overflow: 'hidden',
         }}>
+            {/* Chat Header with Model Display and Settings */}
+            <ChatHeader>
+                <Typography variant="h6" sx={{
+                    fontWeight: 'bold',
+                    fontSize: '1.1rem',
+                    '@media (max-width: 600px)': {
+                        fontSize: '1rem',
+                    },
+                    '@media (max-width: 360px)': {
+                        fontSize: '0.9rem',
+                    },
+                }}>
+                    Model: {selectedModel.displayName}
+                </Typography>
+                <IconButton
+                    onClick={handleSettingsClick}
+                    sx={{
+                        color: 'white',
+                        '&:hover': {
+                            background: 'rgba(255, 255, 255, 0.1)',
+                        },
+                        '@media (max-width: 600px)': {
+                            width: '36px',
+                            height: '36px',
+                        },
+                        '@media (max-width: 360px)': {
+                            width: '32px',
+                            height: '32px',
+                        },
+                    }}
+                >
+                    <SettingsIcon sx={{
+                        '@media (max-width: 600px)': {
+                            fontSize: '1.1rem',
+                        },
+                        '@media (max-width: 360px)': {
+                            fontSize: '1rem',
+                        },
+                    }} />
+                </IconButton>
+            </ChatHeader>
+
+            {/* Settings Menu */}
+            <StyledMenu
+                anchorEl={settingsAnchorEl}
+                open={Boolean(settingsAnchorEl)}
+                onClose={handleSettingsClose}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+                <Typography variant="subtitle2" sx={{ px: 2, py: 1, opacity: 0.7 }}>
+                    AI Model
+                </Typography>
+                {AVAILABLE_MODELS.map((model) => (
+                    <MenuItem
+                        key={model.id}
+                        onClick={() => handleModelChange(model)}
+                        selected={selectedModel.id === model.id}
+                        sx={{
+                            '&.Mui-selected': {
+                                background: 'rgba(255, 106, 0, 0.2)',
+                                '&:hover': {
+                                    background: 'rgba(255, 106, 0, 0.3)',
+                                },
+                            },
+                        }}
+                    >
+                        <ListItemIcon>
+                            {getModelIcon(model)}
+                        </ListItemIcon>
+                        <ListItemText
+                            primary={model.name}
+                            secondary={model.provider}
+                            secondaryTypographyProps={{
+                                sx: {
+                                    color: 'rgba(255, 255, 255, 0.6)',
+                                    fontSize: '0.75rem'
+                                }
+                            }}
+                        />
+                    </MenuItem>
+                ))}
+                <Divider sx={{ borderColor: 'rgba(255, 106, 0, 0.2)', my: 1 }} />
+                <MenuItem onClick={clearConversation}>
+                    <ListItemIcon>
+                        <DeleteIcon sx={{ color: 'rgba(255, 255, 255, 0.9)' }} />
+                    </ListItemIcon>
+                    <ListItemText primary="Clear Conversation" />
+                </MenuItem>
+            </StyledMenu>
+
             {/* Context Indicator */}
             {currentGroupId && (
                 <Alert
@@ -353,7 +843,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                         '& .MuiAlert-icon': {
                             color: '#00eaff',
                         },
-                        // Mobile responsive adjustments
                         '@media (max-width: 600px)': {
                             m: 0.75,
                             fontSize: '0.7rem',
@@ -386,7 +875,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 1,
-                    // Mobile responsive adjustments
                     '@media (max-width: 600px)': {
                         p: 0.75,
                         gap: 0.75,
@@ -397,7 +885,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                     },
                     '&::-webkit-scrollbar': {
                         width: '6px',
-                        // Mobile responsive adjustments
                         '@media (max-width: 600px)': {
                             width: '4px',
                         },
@@ -422,7 +909,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                             alignSelf: message.sender === 'user' ? 'flex-end' : 'flex-start',
                             maxWidth: '85%',
                             p: 0,
-                            // Mobile responsive adjustments
                             '@media (max-width: 600px)': {
                                 maxWidth: '90%',
                             },
@@ -448,7 +934,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                                                 lineHeight: 1.4,
                                                 whiteSpace: 'pre-line',
                                                 color: message.sender === 'user' ? 'white' : 'rgba(255, 255, 255, 0.9)',
-                                                // Mobile responsive adjustments
                                                 '@media (max-width: 600px)': {
                                                     fontSize: '0.85rem',
                                                     lineHeight: 1.3,
@@ -466,7 +951,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                                             display: 'flex',
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
-                                            // Mobile responsive adjustments
                                             '@media (max-width: 600px)': {
                                                 marginTop: '6px',
                                                 flexWrap: 'wrap',
@@ -478,7 +962,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                                                 sx={{
                                                     color: message.sender === 'user' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.6)',
                                                     fontSize: '0.7rem',
-                                                    // Mobile responsive adjustments
                                                     '@media (max-width: 600px)': {
                                                         fontSize: '0.65rem',
                                                     },
@@ -498,7 +981,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                                                         fontSize: '0.6rem',
                                                         bgcolor: message.sender === 'user' ? 'rgba(255,255,255,0.2)' : 'rgba(255, 106, 0, 0.3)',
                                                         color: 'white',
-                                                        // Mobile responsive adjustments
                                                         '@media (max-width: 600px)': {
                                                             height: 14,
                                                             fontSize: '0.55rem',
@@ -528,7 +1010,35 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                                                         fontSize: '0.6rem',
                                                         bgcolor: '#e63946',
                                                         color: 'white',
-                                                        // Mobile responsive adjustments
+                                                        '@media (max-width: 600px)': {
+                                                            height: 14,
+                                                            fontSize: '0.55rem',
+                                                        },
+                                                        '@media (max-width: 360px)': {
+                                                            height: 12,
+                                                            fontSize: '0.5rem',
+                                                        },
+                                                    }}
+                                                />
+                                            )}
+                                            {message.hasAnalysis && (
+                                                <Chip
+                                                    icon={<ChartIcon sx={{
+                                                        fontSize: '0.6rem',
+                                                        '@media (max-width: 600px)': {
+                                                            fontSize: '0.55rem',
+                                                        },
+                                                        '@media (max-width: 360px)': {
+                                                            fontSize: '0.5rem',
+                                                        },
+                                                    }} />}
+                                                    label="Analyzed"
+                                                    size="small"
+                                                    sx={{
+                                                        height: 16,
+                                                        fontSize: '0.6rem',
+                                                        bgcolor: '#00b4d8',
+                                                        color: 'white',
                                                         '@media (max-width: 600px)': {
                                                             height: 14,
                                                             fontSize: '0.55rem',
@@ -552,7 +1062,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                         alignSelf: 'flex-start',
                         maxWidth: '85%',
                         p: 0,
-                        // Mobile responsive adjustments
                         '@media (max-width: 600px)': {
                             maxWidth: '90%',
                         },
@@ -572,7 +1081,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                             <Typography variant="body2" sx={{
                                 fontStyle: 'italic',
                                 color: 'rgba(255, 255, 255, 0.9)',
-                                // Mobile responsive adjustments
                                 '@media (max-width: 600px)': {
                                     fontSize: '0.85rem',
                                 },
@@ -590,7 +1098,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
 
             <Divider sx={{ borderColor: 'rgba(255, 106, 0, 0.2)' }} />
 
-            {/* Memory Indicator - Fixed styling */}
+            {/* Memory Indicator */}
             {conversationMemory.length > 0 && (
                 <Box sx={{
                     px: 2,
@@ -616,7 +1124,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                 p: 2,
                 display: 'flex',
                 gap: 1,
-                // Mobile responsive adjustments
                 '@media (max-width: 600px)': {
                     p: 1.5,
                     gap: 0.75,
@@ -638,7 +1145,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                     multiline
                     maxRows={3}
                     sx={{
-                        // Mobile responsive adjustments
                         '@media (max-width: 600px)': {
                             '& .MuiOutlinedInput-root': {
                                 fontSize: '0.9rem',
@@ -674,7 +1180,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                             background: 'rgba(255, 106, 0, 0.2)',
                             color: 'rgba(255, 255, 255, 0.3)',
                         },
-                        // Mobile responsive adjustments
                         '@media (max-width: 600px)': {
                             width: '36px',
                             height: '36px',
@@ -703,7 +1208,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                 display: 'flex',
                 gap: 0.5,
                 flexWrap: 'wrap',
-                // Mobile responsive adjustments
                 '@media (max-width: 600px)': {
                     px: 1.5,
                     pb: 1.5,
@@ -720,7 +1224,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                     size="small"
                     onClick={() => sendQuickMessage("Can you summarize this article?")}
                     sx={{
-                        // Mobile responsive adjustments
                         '@media (max-width: 600px)': {
                             fontSize: '0.7rem',
                             height: '28px',
@@ -736,7 +1239,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                     size="small"
                     onClick={() => sendQuickMessage("What are the key points?")}
                     sx={{
-                        // Mobile responsive adjustments
                         '@media (max-width: 600px)': {
                             fontSize: '0.7rem',
                             height: '28px',
@@ -747,34 +1249,31 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                         },
                     }}
                 />
-                {currentGroupId && (
-                    <QuickActionChip
-                        icon={<ChartIcon sx={{
+                <QuickActionChip
+                    icon={<ChartIcon sx={{
+                        fontSize: '0.7rem',
+                        '@media (max-width: 600px)': {
+                            fontSize: '0.6rem',
+                        },
+                        '@media (max-width: 360px)': {
+                            fontSize: '0.55rem',
+                        },
+                    }} />}
+                    label="5W1H"
+                    size="small"
+                    onClick={() => sendAnalysisRequest()}
+                    sx={{
+                        background: 'linear-gradient(45deg, #00b4d8, #0077b6)',
+                        '@media (max-width: 600px)': {
                             fontSize: '0.7rem',
-                            '@media (max-width: 600px)': {
-                                fontSize: '0.6rem',
-                            },
-                            '@media (max-width: 360px)': {
-                                fontSize: '0.55rem',
-                            },
-                        }} />}
-                        label="Chart"
-                        size="small"
-                        onClick={() => sendQuickMessage("Create a sentiment chart")}
-                        sx={{
-                            background: 'linear-gradient(45deg, #ff6a00, #00eaff)',
-                            // Mobile responsive adjustments
-                            '@media (max-width: 600px)': {
-                                fontSize: '0.7rem',
-                                height: '28px',
-                            },
-                            '@media (max-width: 360px)': {
-                                fontSize: '0.65rem',
-                                height: '26px',
-                            },
-                        }}
-                    />
-                )}
+                            height: '28px',
+                        },
+                        '@media (max-width: 360px)': {
+                            fontSize: '0.65rem',
+                            height: '26px',
+                        },
+                    }}
+                />
             </Box>
         </Box>
     );

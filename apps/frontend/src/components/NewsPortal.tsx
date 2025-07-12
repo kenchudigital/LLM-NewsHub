@@ -28,6 +28,8 @@ import {
     InputLabel,
     Select,
     MenuItem,
+    FormControlLabel,
+    Switch,
 } from '@mui/material';
 import {
     PlayArrow,
@@ -461,8 +463,9 @@ const ChatContainer = styled(Box)(({ theme }) => ({
 }));
 
 const ChatIcon = styled(Fab)(({ theme }) => ({
-    width: '60px',
-    height: '60px',
+    // Desktop size - enlarged from 60px to 80px
+    width: '80px',
+    height: '80px',
     background: 'linear-gradient(45deg, #00eaff, #ff6a00)',
     color: 'white',
     boxShadow: '0 8px 32px rgba(0, 234, 255, 0.3)',
@@ -483,6 +486,18 @@ const ChatIcon = styled(Fab)(({ theme }) => ({
             boxShadow: '0 12px 40px rgba(255, 106, 0, 0.4)',
             transform: 'scale(1.05)'
         },
+    },
+
+    // Mobile size - keep original 60px for mobile
+    [theme.breakpoints.down('lg')]: {
+        width: '60px',
+        height: '60px',
+    },
+
+    // Small mobile size - even smaller
+    [theme.breakpoints.down('sm')]: {
+        width: '56px',
+        height: '56px',
     },
 }));
 
@@ -891,6 +906,7 @@ const NewsPortal: React.FC = () => {
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
     const [category, setCategory] = useState('all');
     const [search, setSearch] = useState('');
+    const [fuzzySearch, setFuzzySearch] = useState(false); // Add fuzzy search state
     const [loading, setLoading] = useState(false);
     // Remove categories state since we'll use fixed categories
     const [isChatMinimized, setIsChatMinimized] = useState(true);
@@ -906,6 +922,9 @@ const NewsPortal: React.FC = () => {
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [audioUnlocked, setAudioUnlocked] = useState(false);
     const [isProcessingAudio, setIsProcessingAudio] = useState(false);
+
+    // 在 NewsPortal 组件中添加新的状态
+    const [summaryDate, setSummaryDate] = useState<string>('');
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -971,7 +990,8 @@ const NewsPortal: React.FC = () => {
                 setLoading(true);
                 await Promise.all([
                     fetchArticles(),
-                    fetchDates()
+                    fetchDates(),
+                    fetchConfig()  // 添加配置获取
                 ]);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -980,7 +1000,7 @@ const NewsPortal: React.FC = () => {
             }
         };
         fetchData();
-    }, [category, search, selectedDate]);
+    }, [category, search, selectedDate, fuzzySearch]); // Add fuzzySearch to dependencies
 
     // Auto-select first article when articles load (but only if no date is manually selected)
     useEffect(() => {
@@ -1010,14 +1030,16 @@ const NewsPortal: React.FC = () => {
             console.log('Fetching articles with params:', {
                 category: category !== 'all' ? category : undefined,
                 search: search || undefined,
-                date: selectedDate || undefined
+                date: selectedDate || undefined,
+                fuzzy: fuzzySearch
             });
 
             const response = await axios.get(`${API_URL}/api/news`, {
                 params: {
                     category: category !== 'all' ? category : undefined,
                     search: search || undefined,
-                    date: selectedDate || undefined
+                    date: selectedDate || undefined,
+                    fuzzy: fuzzySearch // Add fuzzy parameter
                 }
             });
 
@@ -1567,6 +1589,23 @@ const NewsPortal: React.FC = () => {
         }
     };
 
+    // Add fuzzy search toggle handler
+    const handleFuzzySearchToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setFuzzySearch(event.target.checked);
+    };
+
+    // 新增：获取配置信息
+    const fetchConfig = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/config/summary-date`);
+            setSummaryDate(response.data.date);
+            console.log('Summary date loaded:', response.data.date);
+        } catch (error) {
+            console.error('Error fetching config:', error);
+            setSummaryDate('2025-07-12'); // fallback
+        }
+    };
+
     return (
         <Box sx={{ minHeight: '100vh', background: 'inherit' }}>
             {/* Header */}
@@ -1601,19 +1640,69 @@ const NewsPortal: React.FC = () => {
                                         </IconButton>
                                     </InputAdornment>
                                 ),
-                                endAdornment: search && (
+                                endAdornment: (
                                     <InputAdornment position="end">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                                setSearch('');
-                                                // Fetch articles again to reset search
-                                                setTimeout(() => fetchArticles(), 100);
-                                            }}
-                                            sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
-                                        >
-                                            <Close fontSize="small" />
-                                        </IconButton>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            {/* Fuzzy Search Toggle */}
+                                            <Tooltip title="Enable fuzzy search to find results with typos and similar words">
+                                                <FormControlLabel
+                                                    control={
+                                                        <Switch
+                                                            checked={fuzzySearch}
+                                                            onChange={handleFuzzySearchToggle}
+                                                            size="small"
+                                                            sx={{
+                                                                '& .MuiSwitch-switchBase.Mui-checked': {
+                                                                    color: '#00eaff',
+                                                                },
+                                                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                                    backgroundColor: '#00eaff',
+                                                                },
+                                                                '& .MuiSwitch-track': {
+                                                                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                                                }
+                                                            }}
+                                                        />
+                                                    }
+                                                    label={
+                                                        <Typography
+                                                            variant="caption"
+                                                            sx={{
+                                                                color: fuzzySearch ? '#00eaff' : 'rgba(255, 255, 255, 0.7)',
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: fuzzySearch ? 600 : 400,
+                                                                transition: 'all 0.3s ease',
+                                                                '@media (max-width: 768px)': {
+                                                                    display: 'none'
+                                                                }
+                                                            }}
+                                                        >
+                                                            Fuzzy
+                                                        </Typography>
+                                                    }
+                                                    sx={{
+                                                        margin: 0,
+                                                        '& .MuiFormControlLabel-label': {
+                                                            paddingLeft: '4px'
+                                                        }
+                                                    }}
+                                                />
+                                            </Tooltip>
+
+                                            {/* Clear Search Button */}
+                                            {search && (
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => {
+                                                        setSearch('');
+                                                        setTimeout(() => fetchArticles(), 100);
+                                                    }}
+                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                                >
+                                                    <Close fontSize="small" />
+                                                </IconButton>
+                                            )}
+                                        </Box>
                                     </InputAdornment>
                                 ),
                                 sx: {
@@ -1639,6 +1728,7 @@ const NewsPortal: React.FC = () => {
                             }}
                         />
                     </SearchBar>
+                    {/* Video Modal Button */}
                     <Tooltip title="Watch Summary Video">
                         <IconButton
                             onClick={() => setIsVideoModalOpen(true)}
@@ -1662,6 +1752,49 @@ const NewsPortal: React.FC = () => {
                     </Tooltip>
                 </HeaderContent>
             </Header>
+
+            {/* Add Search Status Indicator */}
+            {search && (
+                <Container maxWidth={false} sx={{ pt: 2, pb: 1 }}>
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        background: 'rgba(0, 234, 255, 0.05)',
+                        border: '1px solid rgba(0, 234, 255, 0.2)',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        maxWidth: '1000px',
+                        margin: '0 auto'
+                    }}>
+                        <SearchIcon sx={{ color: '#00eaff', fontSize: '1rem' }} />
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                            {fuzzySearch ? 'Fuzzy search' : 'Exact search'} for:
+                            <span style={{ color: '#00eaff', fontWeight: 600, marginLeft: '4px' }}>
+                                "{search}"
+                            </span>
+                        </Typography>
+                        {fuzzySearch && (
+                            <Chip
+                                label="AI Enhanced"
+                                size="small"
+                                sx={{
+                                    background: 'linear-gradient(45deg, #00eaff, #ff6a00)',
+                                    color: 'white',
+                                    fontSize: '0.7rem',
+                                    height: '20px',
+                                    '& .MuiChip-label': {
+                                        padding: '0 8px'
+                                    }
+                                }}
+                            />
+                        )}
+                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)', ml: 'auto' }}>
+                            {articles.length} results
+                        </Typography>
+                    </Box>
+                </Container>
+            )}
 
             <Container maxWidth={false} sx={{
                 py: 4,
@@ -2305,7 +2438,9 @@ const NewsPortal: React.FC = () => {
             <ChatContainer className={isChatMinimized ? 'minimized' : ''}>
                 {isChatMinimized ? (
                     <ChatIcon onClick={toggleChat}>
-                        <SmartToy sx={{ fontSize: '28px' }} />
+                        <SmartToy sx={{
+                            fontSize: { xs: '24px', sm: '24px', md: '28px', lg: '32px' }
+                        }} />
                     </ChatIcon>
                 ) : (
                     <Box sx={{
@@ -2493,7 +2628,7 @@ const NewsPortal: React.FC = () => {
                         },
                     }}
                 >
-                    {/* Modal Header */}
+                    {/* Modal Header with Config Date */}
                     <Box
                         sx={{
                             p: 2,
@@ -2507,7 +2642,7 @@ const NewsPortal: React.FC = () => {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <VideoLibrary sx={{ color: '#00eaff', fontSize: '24px' }} />
                             <Typography variant="h6" sx={{ color: '#00eaff', fontWeight: 600 }}>
-                                AI News Summary Video
+                                AI News Summary Video{summaryDate ? ` - ${new Date(summaryDate).toLocaleDateString()}` : ''}
                             </Typography>
                         </Box>
                         <IconButton
@@ -2524,7 +2659,7 @@ const NewsPortal: React.FC = () => {
                         </IconButton>
                     </Box>
 
-                    {/* Video Player */}
+                    {/* Video Player using Config Date */}
                     <Box
                         sx={{
                             flex: 1,
@@ -2549,41 +2684,18 @@ const NewsPortal: React.FC = () => {
                                 console.error('Video error:', e);
                             }}
                         >
-                            <source src={`${STATIC_URL}/summary-video/summary.mp4`} type="video/mp4" />
+                            <source
+                                src={summaryDate
+                                    ? `${STATIC_URL}/summary-video/${summaryDate}/summary.mp4`
+                                    : `${STATIC_URL}/summary-video/summary.mp4`
+                                }
+                                type="video/mp4"
+                            />
                             Your browser does not support the video tag.
                         </video>
                     </Box>
 
-                    {/* Modal Footer */}
-                    <Box
-                        sx={{
-                            p: 2,
-                            borderTop: '1px solid rgba(0, 234, 255, 0.2)',
-                            background: 'rgba(0, 234, 255, 0.05)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                        }}
-                    >
-                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                            📹 AI-generated summary of recent news events
-                        </Typography>
-                        <Button
-                            variant="outlined"
-                            startIcon={<FullscreenExit />}
-                            onClick={() => setIsVideoModalOpen(false)}
-                            sx={{
-                                color: '#00eaff',
-                                borderColor: 'rgba(0, 234, 255, 0.3)',
-                                '&:hover': {
-                                    borderColor: '#00eaff',
-                                    backgroundColor: 'rgba(0, 234, 255, 0.1)',
-                                },
-                            }}
-                        >
-                            Close
-                        </Button>
-                    </Box>
+
                 </Box>
             </Modal>
         </Box>

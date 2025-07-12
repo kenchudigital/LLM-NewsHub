@@ -23,6 +23,7 @@ class Settings:
     PERPLEXITY_API_KEY: str = os.getenv('PERPLEXITY_API_KEY', '')
     ANTHROPIC_API_KEY: str = os.getenv('ANTHROPIC_API_KEY', '')
     ALIBABA_LLM_KEY: str = os.getenv('ALIBABA_LLM_KEY', '')
+    ALIBABA_LLM_KEY_KG: str = os.getenv('ALIBABA_LLM_KEY_KG', '')  
     GEMINI_API_KEY: str = os.getenv('GEMINI_API_KEY', '')
     
     # CORS Configuration
@@ -33,6 +34,8 @@ class Settings:
     
     # Default date for news - will be overridden by most recent available date
     DEFAULT_NEWS_DATE: str = "2025-06-14"
+
+    SUMMARY_DATE: str = "2025-07-12"
     
     @property
     def get_default_news_date(self) -> str:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from ...services.news_service import NewsService
 from ...core.config import settings
@@ -13,7 +13,8 @@ news_service = NewsService()
 async def get_news(
     category: Optional[str] = None,
     search: Optional[str] = None,
-    date: Optional[str] = None
+    date: Optional[str] = None,
+    fuzzy: bool = Query(False, description="Enable fuzzy search")  # Add fuzzy parameter
 ):
     """Get news articles with optional filtering"""
     try:
@@ -21,7 +22,7 @@ async def get_news(
         if not date:
             date = news_service.get_most_recent_date()
         
-        return news_service.get_filtered_news(date, category, search)
+        return news_service.get_filtered_news(date, category, search, fuzzy)  # Pass fuzzy parameter
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch news")
 
