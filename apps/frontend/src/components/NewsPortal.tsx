@@ -406,11 +406,11 @@ const ArticleContainer = styled(Paper)(({ theme }) => ({
 }));
 
 // Styled components for chatbot
-const ChatContainer = styled(Box)(({ theme }) => ({
+const ChatContainer = styled(Box)<{ fullscreen?: boolean }>(({ theme, fullscreen }) => ({
     position: 'fixed',
     bottom: theme.spacing(3),
     right: theme.spacing(3),
-    zIndex: 1300,
+    zIndex: fullscreen ? 9998 : 1300, // Lower z-index than ChatBot's fullscreen
     transition: 'all 0.3s ease',
 
     '&.minimized': {
@@ -419,45 +419,45 @@ const ChatContainer = styled(Box)(({ theme }) => ({
     },
 
     '&:not(.minimized)': {
-        width: '400px',
-        height: '500px',
-        background: 'rgba(13, 13, 13, 0.95)',
-        borderRadius: theme.shape.borderRadius * 2,
-        border: '1px solid rgba(0, 234, 255, 0.3)',
-        backdropFilter: 'blur(10px)',
+        width: fullscreen ? 'auto' : '400px',
+        height: fullscreen ? 'auto' : '500px',
+        background: fullscreen ? 'transparent' : 'rgba(13, 13, 13, 0.95)',
+        borderRadius: fullscreen ? 0 : theme.shape.borderRadius * 2,
+        border: fullscreen ? 'none' : '1px solid rgba(0, 234, 255, 0.3)',
+        backdropFilter: fullscreen ? 'none' : 'blur(10px)',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        overflow: fullscreen ? 'visible' : 'hidden',
 
         // Tablet responsive
         [theme.breakpoints.down('md')]: {
-            width: '350px',
-            height: '450px',
+            width: fullscreen ? 'auto' : '350px',
+            height: fullscreen ? 'auto' : '450px',
             right: theme.spacing(2),
             bottom: theme.spacing(2),
         },
 
         // Mobile responsive - full width
         [theme.breakpoints.down('sm')]: {
-            width: '100vw',
-            height: '80vh',
-            maxHeight: '500px',
+            width: fullscreen ? 'auto' : '100vw',
+            height: fullscreen ? 'auto' : '80vh',
+            maxHeight: fullscreen ? 'none' : '500px',
             right: 0,
             bottom: 0,
             left: 0,
-            borderRadius: '16px 16px 0 0', // Only round top corners
+            borderRadius: fullscreen ? 0 : '16px 16px 0 0', // Only round top corners
             transform: 'none',
         },
 
         // Very small mobile screens
         '@media (max-width: 360px)': {
-            width: '100vw',
-            height: '75vh',
-            maxHeight: '400px',
+            width: fullscreen ? 'auto' : '100vw',
+            height: fullscreen ? 'auto' : '75vh',
+            maxHeight: fullscreen ? 'none' : '400px',
             right: 0,
             bottom: 0,
             left: 0,
-            borderRadius: '12px 12px 0 0', // Only round top corners
+            borderRadius: fullscreen ? 0 : '12px 12px 0 0', // Only round top corners
         },
     },
 }));
@@ -910,6 +910,7 @@ const NewsPortal: React.FC = () => {
     const [loading, setLoading] = useState(false);
     // Remove categories state since we'll use fixed categories
     const [isChatMinimized, setIsChatMinimized] = useState(true);
+    const [isChatFullscreen, setIsChatFullscreen] = useState(false);
     const [selectedSectionIndex, setSelectedSectionIndex] = useState<number>(0);
     const [availableDates, setAvailableDates] = useState<string[]>([]);
     const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -1546,6 +1547,10 @@ const NewsPortal: React.FC = () => {
 
     const toggleChat = () => {
         setIsChatMinimized(!isChatMinimized);
+    };
+
+    const handleChatFullscreenChange = (isFullscreen: boolean) => {
+        setIsChatFullscreen(isFullscreen);
     };
 
     // Add a useEffect to monitor selectedArticle changes
@@ -2435,7 +2440,10 @@ const NewsPortal: React.FC = () => {
             </Container>
 
             {/* Chat Bot */}
-            <ChatContainer className={isChatMinimized ? 'minimized' : ''}>
+            <ChatContainer
+                className={isChatMinimized ? 'minimized' : ''}
+                fullscreen={isChatFullscreen}
+            >
                 {isChatMinimized ? (
                     <ChatIcon onClick={toggleChat}>
                         <SmartToy sx={{
@@ -2444,15 +2452,16 @@ const NewsPortal: React.FC = () => {
                     </ChatIcon>
                 ) : (
                     <Box sx={{
-                        width: '400px',
-                        height: '500px',
+                        width: isChatFullscreen ? 'auto' : '400px',
+                        height: isChatFullscreen ? 'auto' : '500px',
                         display: 'flex',
                         flexDirection: 'column',
                         position: 'relative',
+                        overflow: isChatFullscreen ? 'visible' : 'hidden',
                         // Mobile responsive
                         '@media (max-width: 768px)': {
-                            width: '100%',
-                            height: '100%',
+                            width: isChatFullscreen ? 'auto' : '100%',
+                            height: isChatFullscreen ? 'auto' : '100%',
                         },
                     }}>
                         <Box sx={{
@@ -2534,6 +2543,7 @@ const NewsPortal: React.FC = () => {
                             <ChatBot
                                 currentGroupId={selectedGroupId || ''}
                                 currentDate={selectedDate}
+                                onFullscreenChange={handleChatFullscreenChange}
                             />
                         </Box>
                     </Box>

@@ -116,3 +116,5 @@ __pycache__/
 
 apps/frontend/src/components/ChatBot_backup.tsx
 apps/frontend/src/components/ChatBot_copy.tsx
+
+data/output/knowledge_graph/knowledge_graph.xlsx

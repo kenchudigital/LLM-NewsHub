@@ -32,6 +32,8 @@ import {
     Cloud as CloudIcon,
     AutoFixHigh as GeminiIcon,
     Search as PerplexityIcon,
+    Fullscreen as FullscreenIcon,
+    FullscreenExit as FullscreenExitIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
@@ -79,28 +81,42 @@ const AVAILABLE_MODELS = [
 const DEFAULT_MODEL = AVAILABLE_MODELS[0];
 
 // Styled components for high-tech theme
-const ChatContainer = styled(Paper)(({ theme }) => ({
-    height: '100%',
+const ChatContainer = styled(Paper)<{ fullscreen?: boolean }>(({ theme, fullscreen }) => ({
+    height: fullscreen ? '90vh' : '100%',
+    width: fullscreen ? '95vw' : '100%',
     display: 'flex',
     flexDirection: 'column',
-    maxHeight: '600px',
+    maxHeight: fullscreen ? '90vh' : '600px',
     background: 'linear-gradient(135deg, rgba(13, 13, 13, 0.95) 0%, rgba(26, 26, 46, 0.9) 50%, rgba(22, 33, 62, 0.85) 100%)',
     border: '1px solid rgba(255, 106, 0, 0.3)',
-    borderRadius: '12px',
+    borderRadius: fullscreen ? '8px' : '12px',
     backdropFilter: 'blur(10px)',
-    boxShadow: '0 8px 32px rgba(255, 106, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+    boxShadow: fullscreen
+        ? '0 16px 64px rgba(255, 106, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+        : '0 8px 32px rgba(255, 106, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
     overflow: 'hidden',
-    position: 'relative',
+    position: fullscreen ? 'fixed' : 'relative',
+    top: fullscreen ? '5vh' : 'auto',
+    left: fullscreen ? '50%' : 'auto',
+    transform: fullscreen ? 'translateX(-50%)' : 'none',
+    zIndex: fullscreen ? 9999 : 'auto',
+    transition: 'all 0.3s ease-in-out',
 
     // Mobile responsive adjustments
     [theme.breakpoints.down('sm')]: {
-        maxHeight: '400px',
-        borderRadius: '8px',
+        height: fullscreen ? '85vh' : '100%',
+        maxHeight: fullscreen ? '85vh' : '400px',
+        width: fullscreen ? '98vw' : '100%',
+        borderRadius: fullscreen ? '6px' : '8px',
+        top: fullscreen ? '7.5vh' : 'auto',
     },
 
     '@media (max-width: 360px)': {
-        maxHeight: '350px',
-        borderRadius: '6px',
+        height: fullscreen ? '80vh' : '100%',
+        maxHeight: fullscreen ? '80vh' : '350px',
+        width: fullscreen ? '99vw' : '100%',
+        borderRadius: fullscreen ? '4px' : '6px',
+        top: fullscreen ? '10vh' : 'auto',
     },
 
     '&::before': {
@@ -250,6 +266,7 @@ interface Message {
 interface ChatBotProps {
     currentGroupId?: string;
     currentDate?: string;
+    onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
 interface PendingRequest {
@@ -260,7 +277,7 @@ interface PendingRequest {
     model: string;
 }
 
-const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
+const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullscreenChange }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -268,6 +285,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
     const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
     const [userIP, setUserIP] = useState<string>('');
     const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const backgroundProcessingInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -705,6 +723,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
         setSettingsAnchorEl(null);
     };
 
+    const toggleFullscreen = () => {
+        const newFullscreenState = !isFullscreen;
+        setIsFullscreen(newFullscreenState);
+        onFullscreenChange?.(newFullscreenState);
+    };
+
     const getModelIcon = (model: typeof DEFAULT_MODEL) => {
         const IconComponent = model.icon;
         return <IconComponent sx={{ color: 'rgba(255, 255, 255, 0.9)' }} />;
@@ -729,15 +753,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
     };
 
     return (
-        <Box sx={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'relative',
-            width: '100%',
-            minWidth: 0,
-            overflow: 'hidden',
-        }}>
+        <ChatContainer fullscreen={isFullscreen}>
             {/* Chat Header with Model Display and Settings */}
             <ChatHeader>
                 <Typography variant="h6" sx={{
@@ -752,32 +768,47 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                 }}>
                     Model: {selectedModel.displayName}
                 </Typography>
-                <IconButton
-                    onClick={handleSettingsClick}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {
-                            background: 'rgba(255, 255, 255, 0.1)',
-                        },
-                        '@media (max-width: 600px)': {
-                            width: '36px',
-                            height: '36px',
-                        },
-                        '@media (max-width: 360px)': {
-                            width: '32px',
-                            height: '32px',
-                        },
-                    }}
-                >
-                    <SettingsIcon sx={{
-                        '@media (max-width: 600px)': {
-                            fontSize: '1.1rem',
-                        },
-                        '@media (max-width: 360px)': {
-                            fontSize: '1rem',
-                        },
-                    }} />
-                </IconButton>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {/* Fullscreen Button - Desktop Only */}
+                    <IconButton
+                        onClick={toggleFullscreen}
+                        sx={{
+                            color: 'white',
+                            display: { xs: 'none', md: 'flex' }, // Only show on desktop
+                            '&:hover': {
+                                background: 'rgba(255, 255, 255, 0.1)',
+                            },
+                        }}
+                    >
+                        {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+                    </IconButton>
+                    <IconButton
+                        onClick={handleSettingsClick}
+                        sx={{
+                            color: 'white',
+                            '&:hover': {
+                                background: 'rgba(255, 255, 255, 0.1)',
+                            },
+                            '@media (max-width: 600px)': {
+                                width: '36px',
+                                height: '36px',
+                            },
+                            '@media (max-width: 360px)': {
+                                width: '32px',
+                                height: '32px',
+                            },
+                        }}
+                    >
+                        <SettingsIcon sx={{
+                            '@media (max-width: 600px)': {
+                                fontSize: '1.1rem',
+                            },
+                            '@media (max-width: 360px)': {
+                                fontSize: '1rem',
+                            },
+                        }} />
+                    </IconButton>
+                </Box>
             </ChatHeader>
 
             {/* Settings Menu */}
@@ -1275,7 +1306,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate }) => {
                     }}
                 />
             </Box>
-        </Box>
+        </ChatContainer>
     );
 };
 
