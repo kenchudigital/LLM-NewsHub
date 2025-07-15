@@ -350,132 +350,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
         return DEFAULT_MODEL;
     };
 
-    // Background processing functions
-    const savePendingRequest = (request: PendingRequest) => {
-        if (userIP) {
-            const existingRequests = loadPendingRequests();
-            const updatedRequests = [...existingRequests, request];
-            localStorage.setItem(getStorageKey('pendingRequests'), JSON.stringify(updatedRequests));
-        }
-    };
-
-    const loadPendingRequests = (): PendingRequest[] => {
-        if (userIP) {
-            const saved = localStorage.getItem(getStorageKey('pendingRequests'));
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    return parsed.map((req: any) => ({
-                        ...req,
-                        timestamp: new Date(req.timestamp),
-                        userMessage: {
-                            ...req.userMessage,
-                            timestamp: new Date(req.userMessage.timestamp),
-                        },
-                    }));
-                } catch (error) {
-                    console.error('Error parsing pending requests:', error);
-                }
-            }
-        }
-        return [];
-    };
-
-    const removePendingRequest = (requestId: string) => {
-        if (userIP) {
-            const existingRequests = loadPendingRequests();
-            const updatedRequests = existingRequests.filter(req => req.id !== requestId);
-            localStorage.setItem(getStorageKey('pendingRequests'), JSON.stringify(updatedRequests));
-        }
-    };
-
-    const clearOldPendingRequests = () => {
-        if (userIP) {
-            const existingRequests = loadPendingRequests();
-            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-            const validRequests = existingRequests.filter(req => new Date(req.timestamp) > oneHourAgo);
-            localStorage.setItem(getStorageKey('pendingRequests'), JSON.stringify(validRequests));
-        }
-    };
-
-    const processPendingRequest = async (request: PendingRequest) => {
-        try {
-            const response = await axios.post(`${API_URL}/api/chat`, {
-                message: request.userMessage.text,
-                model: request.model,
-                context: request.context,
-            });
-
-            let botResponseText = response.data.response;
-            let chartGenerated = false;
-
-            // Check if the backend returned chart data
-            if (response.data.chart_data) {
-                const chartData: ChartData = response.data.chart_data;
-                // Add chart to the page if component is still mounted
-                if ((window as any).addChart) {
-                    (window as any).addChart(chartData);
-                    chartGenerated = true;
-                }
-            }
-
-            const botMessage: Message = {
-                id: Date.now() + 1,
-                text: botResponseText,
-                sender: 'bot',
-                timestamp: new Date(),
-                hasChart: chartGenerated,
-            };
-
-            // Update conversation in localStorage
-            const currentConversation = loadConversation();
-            const updatedConversation = [...currentConversation, botMessage];
-            saveConversation(updatedConversation);
-
-            // Update messages state if component is still mounted
-            setMessages(prev => [...prev, botMessage]);
-
-            // Update conversation memory
-            setConversationMemory(prev => [...prev.slice(-4), response.data.response]);
-
-            // Remove from pending requests
-            removePendingRequest(request.id);
-
-            return true;
-        } catch (error) {
-            console.error('Error processing background request:', error);
-
-            // Create error message
-            const errorMessage: Message = {
-                id: Date.now() + 1,
-                text: 'Sorry, I encountered an error while processing your request in the background. Please try again.',
-                sender: 'bot',
-                timestamp: new Date(),
-            };
-
-            // Update conversation in localStorage
-            const currentConversation = loadConversation();
-            const updatedConversation = [...currentConversation, errorMessage];
-            saveConversation(updatedConversation);
-
-            // Update messages state if component is still mounted
-            setMessages(prev => [...prev, errorMessage]);
-
-            // Remove from pending requests
-            removePendingRequest(request.id);
-
-            return false;
-        }
-    };
-
-    const checkAndProcessPendingRequests = async () => {
-        const pendingRequests = loadPendingRequests();
-
-        for (const request of pendingRequests) {
-            await processPendingRequest(request);
-        }
-    };
-
     // Initialize IP and load data
     useEffect(() => {
         const initializeChat = async () => {
@@ -527,28 +401,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
         }
     }, [selectedModel, userIP]);
 
-    // Background processing setup
-    useEffect(() => {
-        if (userIP) {
-            // Clear old pending requests (older than 1 hour)
-            clearOldPendingRequests();
-
-            // Check for pending requests on mount
-            checkAndProcessPendingRequests();
-
-            // Set up interval to check for pending requests every 5 seconds
-            backgroundProcessingInterval.current = setInterval(() => {
-                checkAndProcessPendingRequests();
-            }, 5000);
-        }
-
-        return () => {
-            if (backgroundProcessingInterval.current) {
-                clearInterval(backgroundProcessingInterval.current);
-            }
-        };
-    }, [userIP]);
-
     // Auto-scroll to bottom when new messages arrive
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -558,21 +410,23 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
         scrollToBottom();
     }, [messages]);
 
-    // Update context when article changes
+    // Update context when article changes - REMOVE auto-message
     useEffect(() => {
         if (currentGroupId && currentDate) {
-            const contextMessage: Message = {
-                id: Date.now(),
-                text: `keep article: (ID: ${currentGroupId}) in LLM CONTEXT now`,
-                sender: 'bot',
-                timestamp: new Date(),
-                context: `Article Context: ${currentGroupId} from ${currentDate}`,
-            };
-            setMessages(prev => [...prev, contextMessage]);
+            // Just update the context silently, don't add a message
+            // const contextMessage: Message = {
+            //     id: Date.now(),
+            //     text: `keep article: (ID: ${currentGroupId}) in LLM CONTEXT now`,
+            //     sender: 'bot',
+            //     timestamp: new Date(),
+            //     context: `Article Context: ${currentGroupId} from ${currentDate}`,
+            // };
+            // setMessages(prev => [...prev, contextMessage]);
         }
     }, [currentGroupId, currentDate]);
 
     const handleSend = async () => {
+        console.log('handleSend called at:', new Date().toISOString());
         if (!input.trim()) return;
 
         const userMessage: Message = {
@@ -583,59 +437,37 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
         };
 
         setMessages((prev) => [...prev, userMessage]);
-
-        // Add to conversation memory
-        setConversationMemory(prev => [...prev.slice(-4), input.trim()]);
+        setConversationMemory(prev => [...prev.slice(-3), input.trim()]);
 
         const userInput = input.trim();
-        const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-        // Create pending request
-        const pendingRequest: PendingRequest = {
-            id: requestId,
-            userMessage,
-            timestamp: new Date(),
-            context: {
-                currentGroupId,
-                currentDate,
-                conversationHistory: conversationMemory,
-            },
-            model: selectedModel.id,
-        };
-
-        // Save pending request for background processing
-        savePendingRequest(pendingRequest);
-
         setInput('');
         setIsLoading(true);
 
         try {
+            console.log('Making API call...');
             const response = await axios.post(`${API_URL}/api/chat`, {
                 message: userInput,
                 model: selectedModel.id,
                 context: {
                     currentGroupId,
                     currentDate,
-                    conversationHistory: conversationMemory,
+                    conversationHistory: conversationMemory.slice(-2), // Limit history
                 },
             });
 
+            console.log('API response received:', response.data);
             let botResponseText = response.data.response;
             let chartGenerated = false;
             let analysisGenerated = false;
 
-            // Check if the backend returned chart data
             if (response.data.chart_data) {
                 const chartData: ChartData = response.data.chart_data;
-
-                // Add chart to the page
                 if ((window as any).addChart) {
                     (window as any).addChart(chartData);
                     chartGenerated = true;
                 }
             }
 
-            // Check if this is a 5W1H analysis response
             const analysisKeywords = ['Who:', 'What:', 'When:', 'Where:', 'Why:', 'How:', '5W1H'];
             analysisGenerated = analysisKeywords.some(keyword =>
                 botResponseText.includes(keyword)
@@ -651,22 +483,21 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
             };
 
             setMessages((prev) => [...prev, botMessage]);
-
-            // Add bot response to memory
-            setConversationMemory(prev => [...prev.slice(-4), response.data.response]);
-
-            // Remove from pending requests since we got the response
-            removePendingRequest(requestId);
+            setConversationMemory(prev => [...prev.slice(-3), response.data.response]);
 
         } catch (error) {
+            console.log('API error:', error);
             console.error('Error sending message:', error);
-            let errorMessage = 'Sorry, I encountered an error. The request will continue processing in the background.';
+
+            let errorMessage = 'Sorry, I encountered an error. Please try again.';
 
             if (axios.isAxiosError(error)) {
-                if (error.response?.status === 500) {
-                    errorMessage = 'The AI service is currently unavailable. The request will continue processing in the background.';
+                if (error.response?.status === 413) {
+                    errorMessage = 'Request too large. Try a shorter message or clear conversation.';
+                } else if (error.response?.status === 500) {
+                    errorMessage = 'The AI service is currently unavailable. Please try again.';
                 } else if (error.response?.data?.detail) {
-                    errorMessage = `Error: ${error.response.data.detail}. The request will continue processing in the background.`;
+                    errorMessage = `Error: ${error.response.data.detail}`;
                 }
             }
 
@@ -677,8 +508,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
                 timestamp: new Date(),
             };
             setMessages((prev) => [...prev, errorMsg]);
-
-            // Don't remove from pending requests - let background processing handle it
         } finally {
             setIsLoading(false);
         }

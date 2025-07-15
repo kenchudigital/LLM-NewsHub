@@ -35,7 +35,7 @@ class Settings:
     # Default date for news - will be overridden by most recent available date
     DEFAULT_NEWS_DATE: str = "2025-06-14"
 
-    SUMMARY_DATE: str = "2025-07-12"
+    SUMMARY_DATE: str = "2025-06-23"
     
     @property
     def get_default_news_date(self) -> str:
