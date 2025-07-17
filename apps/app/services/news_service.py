@@ -209,19 +209,19 @@ class NewsService:
         
         article = articles[group_id]
         context = f"""
-CURRENT ARTICLE ANALYSIS:
-Title: {article.get('headline', '')}
-Category: {article.get('category', '')}
-Date: {date}
+                    CURRENT ARTICLE ANALYSIS:
+                    Title: {article.get('headline', '')}
+                    Category: {article.get('category', '')}
+                    Date: {date}
 
-SUMMARY:
-{article.get('lead', '')}
+                    SUMMARY:
+                    {article.get('lead', '')}
 
-ARTICLE STRUCTURE:
-- Total Sections: {len(article.get('body', []))}
-- Conclusion Available: {'Yes' if article.get('conclusion') else 'No'}
-- Timeline Events: {len(article.get('timeline', {}))}
-"""
+                    ARTICLE STRUCTURE:
+                    - Total Sections: {len(article.get('body', []))}
+                    - Conclusion Available: {'Yes' if article.get('conclusion') else 'No'}
+                    - Timeline Events: {len(article.get('timeline', {}))}
+                    """
         
         # Add metrics from each section with safe type conversion
         body_sections = article.get('body', [])
@@ -260,14 +260,14 @@ ARTICLE STRUCTURE:
                 unique_regions = list(set(str(r) for r in all_regions if r))
                 
                 context += f"""
-KEY METRICS:
-- Average Sentiment: {avg_sentiment:.2f}
-- Average Fake News Probability: {avg_fake_prob:.2f}
-- Total Unique Publishers: {len(unique_publishers)}
-- Regions Covered: {len(unique_regions)}
-- Publisher Diversity: {', '.join(unique_publishers[:5])}
-- Geographic Coverage: {', '.join(unique_regions)}
-"""
+                    KEY METRICS:
+                    - Average Sentiment: {avg_sentiment:.2f}
+                    - Average Fake News Probability: {avg_fake_prob:.2f}
+                    - Total Unique Publishers: {len(unique_publishers)}
+                    - Regions Covered: {len(unique_regions)}
+                    - Publisher Diversity: {', '.join(unique_publishers[:5])}
+                    - Geographic Coverage: {', '.join(unique_regions)}
+                    """
             except Exception as e:
                 logger.error(f"Error processing article metrics: {e}")
                 context += "\nKEY METRICS: Error processing metrics data"
@@ -306,13 +306,13 @@ KEY METRICS:
             if 'summary' in resource_data and isinstance(resource_data['summary'], dict):
                 summary = resource_data['summary']
                 context_parts.append(f"""
-ARTICLE RESOURCE SUMMARY:
-- Total Events: {self.safe_int(summary.get('events_count'))}
-- Posts: {self.safe_int(summary.get('posts_count'))} 
-- Comments: {self.safe_int(summary.get('comments_count'))}
-- Articles: {self.safe_int(summary.get('articles_count'))}
-- Total Items: {self.safe_int(summary.get('total_items'))}
-""")
+                    ARTICLE RESOURCE SUMMARY:
+                    - Total Events: {self.safe_int(summary.get('events_count'))}
+                    - Posts: {self.safe_int(summary.get('posts_count'))} 
+                    - Comments: {self.safe_int(summary.get('comments_count'))}
+                    - Articles: {self.safe_int(summary.get('articles_count'))}
+                    - Total Items: {self.safe_int(summary.get('total_items'))}
+                    """)
             
             # Key events (first 3 most important) with safe handling
             if 'events' in resource_data and isinstance(resource_data['events'], list):
@@ -320,16 +320,16 @@ ARTICLE RESOURCE SUMMARY:
                 for i, event in enumerate(resource_data['events'][:3]):
                     if isinstance(event, dict):
                         context_parts.append(f"""
-Event {i+1}: {str(event.get('event_description', ''))}
-- Type: {str(event.get('event_type', ''))}
-- Date: {str(event.get('event_date', ''))}
-- Location: {str(event.get('event_location', ''))}
-- People Involved: {str(event.get('event_people_involved', ''))}
-- Sentiment: {self.safe_float(event.get('content_sentiment'), 'N/A')}
-- Fake News Probability: {self.safe_float(event.get('fake_news_probability'), 'N/A')}
-- Publisher: {str(event.get('publisher', ''))} ({str(event.get('publisher_country', ''))})
-- Credibility Score: {self.safe_float(event.get('credibility_score'), 'N/A')}
-""")
+                            Event {i+1}: {str(event.get('event_description', ''))}
+                            - Type: {str(event.get('event_type', ''))}
+                            - Date: {str(event.get('event_date', ''))}
+                            - Location: {str(event.get('event_location', ''))}
+                            - People Involved: {str(event.get('event_people_involved', ''))}
+                            - Sentiment: {self.safe_float(event.get('content_sentiment'), 'N/A')}
+                            - Fake News Probability: {self.safe_float(event.get('fake_news_probability'), 'N/A')}
+                            - Publisher: {str(event.get('publisher', ''))} ({str(event.get('publisher_country', ''))})
+                            - Credibility Score: {self.safe_float(event.get('credibility_score'), 'N/A')}
+                            """)
             
             # Social media posts if available with safe handling
             if 'posts' in resource_data and isinstance(resource_data['posts'], list):
@@ -338,11 +338,11 @@ Event {i+1}: {str(event.get('event_description', ''))}
                 for i, post in enumerate(posts[:2]):  # First 2 posts
                     if isinstance(post, dict):
                         context_parts.append(f"""
-Post {i+1}: {str(post.get('title', ''))}
-- Platform: {str(post.get('platform', ''))}
-- Engagement: {self.safe_int(post.get('ups'))} upvotes, {self.safe_int(post.get('num_comments'))} comments
-- Sentiment: {self.safe_float(post.get('sentiment_score'), 'N/A')}
-""")
+                        Post {i+1}: {str(post.get('title', ''))}
+                        - Platform: {str(post.get('platform', ''))}
+                        - Engagement: {self.safe_int(post.get('ups'))} upvotes, {self.safe_int(post.get('num_comments'))} comments
+                        - Sentiment: {self.safe_float(post.get('sentiment_score'), 'N/A')}
+                        """)
             
             # Comments insights with safe handling
             if 'comments' in resource_data and isinstance(resource_data['comments'], list):
@@ -397,12 +397,12 @@ Post {i+1}: {str(post.get('title', ''))}
                     avg_credibility = sum(credibility_scores) / len(credibility_scores) if credibility_scores else 0
                     
                     context_parts.append(f"""
-PUBLISHER ANALYSIS:
-- Unique Publishers: {len(unique_publishers)}
-- Countries Represented: {', '.join(unique_countries)}
-- Average Credibility Score: {avg_credibility:.2f if avg_credibility > 0 else 'N/A'}
-- Main Publishers: {', '.join(unique_publishers[:5])}
-""")
+                                        PUBLISHER ANALYSIS:
+                                        - Unique Publishers: {len(unique_publishers)}
+                                        - Countries Represented: {', '.join(unique_countries)}
+                                        - Average Credibility Score: {avg_credibility:.2f if avg_credibility > 0 else 'N/A'}
+                                        - Main Publishers: {', '.join(unique_publishers[:5])}
+                                        """)
             
             return "\n".join(context_parts)
             

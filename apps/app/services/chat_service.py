@@ -14,31 +14,15 @@ class ChatService:
     
     def create_system_prompt(self, article_context: str, rag_context: str) -> str:
         """Create an enhanced system prompt for the AI assistant"""
-        
-        base_prompt = """You are an AI news assistant for AI NewsSense, an advanced news analysis platform. You have access to comprehensive news data including articles, social media posts, comments, and detailed publisher information.
 
-CAPABILITIES:
-1. Article Analysis: Provide summaries, explain key points, analyze sentiment and credibility
-2. Source Verification: Help users understand publisher credibility, bias, and regional diversity  
-3. Data Insights: Analyze metrics like sentiment scores, fake news probability, engagement patterns
-4. 🌍 Context Awareness: Use article context, social media data, and conversation history
-5. 📈 Trend Analysis: Identify patterns across publishers, regions, and time
+# add CAPABILITIES: to restrict 
+
+        base_prompt = """You are an AI news assistant for AI NewsSense, an advanced news analysis platform. You have access to comprehensive news data including articles, social media posts, comments, and detailed publisher information.
 
 RESPONSE STYLE:
 - Be conversational, helpful, and analytical
-- Provide evidence-based insights using the available data
-- Cite specific metrics when relevant (sentiment scores, credibility ratings, etc.)
-- Explain publisher diversity and geographic coverage
-- Be transparent about data limitations
-- Use emojis sparingly for better readability
-
-AVAILABLE DATA INCLUDES:
-- Full article content with section-by-section analysis
-- Publisher credibility scores and bias ratings
-- Regional diversity of sources
-- Social media posts and public sentiment
-- Fake news probability scores
-- Engagement metrics and comment analysis"""
+- Provide clear and short response
+"""
 
         if article_context:
             base_prompt += f"\n\nCURRENT ARTICLE DATA:\n{article_context}"
@@ -47,13 +31,9 @@ AVAILABLE DATA INCLUDES:
             base_prompt += f"\n\nADDITIONAL RESEARCH DATA:\n{rag_context}"
         
         base_prompt += """
-
-INSTRUCTIONS:
-- Always reference specific data points when making claims
-- Explain methodology behind credibility and sentiment scores
-- Highlight publisher diversity and potential bias
-- Provide actionable insights for news consumers
-- If asked about charts or visualizations, describe what would be shown but note that chart generation is currently limited"""
+        INSTRUCTIONS:
+        - Always reference specific data points when making claims
+        """
         
         return base_prompt
     
@@ -121,7 +101,7 @@ INSTRUCTIONS:
             
             return ChatResponse(
                 response=ai_response,
-                chart_data=None,  # Chart functionality removed for simplicity
+                chart_data=None,  # Chart functionality removed 
                 model_used=llm_response.get("model", "Unknown"),
                 provider_used=llm_response.get("provider", "Unknown")
             )

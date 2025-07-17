@@ -7,7 +7,6 @@ router = APIRouter()
 @router.get("/summary-date")
 async def get_summary_date():
     """Get the summary video date from configuration"""
-    # 从环境变量或默认值获取
     summary_date = os.getenv('SUMMARY_DATE', '2025-07-12')
     
     return {
