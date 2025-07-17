@@ -148,6 +148,12 @@ cp deployment/summary/resource/summary.mp4 apps/static/summary-video/summary.mp4
 cd apps && docker compose up
 ```
 
+## Knowledge Graph
+
+```bash
+python data/output/generate_kg.py # manually to adjust the knowledge graph !
+```
+
 ## Backup Deploy
 
 ```bash

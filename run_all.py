@@ -19,8 +19,6 @@ if __name__ == "__main__":
     os.system(f"python generate_article/generate_article.py --date {today}")
     os.system(f"python generate_article/gather_resource.py --date {today}")
     os.system(f"python generate_article/category_arrange.py --date {today}")
-    print('Evaluate the content...') 
-    os.system(f"python evaluate/evaluate.py --date {today}")
     print('Image Generation: ...')
     os.system(f"python deployment/image/main.py --date {today}")
     print('Audio Generation: ...')
@@ -29,3 +27,10 @@ if __name__ == "__main__":
     # os.system(f"python deployment/wav2lip.py --date {today}")
     print('migrate the data to the UI database...')
     os.system(f"python migrate.py --date {today}")
+
+
+    # print('Evaluate the content...') 
+    # os.system(f"python evaluate/evaluate.py --date {today}")
+
+    # print('generate the knowledge graph...')
+    # os.system(f"python migrate.py --date {today}")

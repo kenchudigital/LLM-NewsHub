@@ -334,12 +334,10 @@ def save_knowledge_graph_data(kg_data, output_dir):
                    'event_summary', 'event_news_category', 'event_title']
     
     # Create a mask for rows containing "Trump" (case-insensitive)
-    trump_mask = df_filtered[text_columns].fillna('').astype(str).apply(
-        lambda row: row.str.contains('Trump', case=False, na=False).any(), axis=1
-    )
-    df_filtered = df_filtered[trump_mask]
-    
-    
+    # trump_mask = df_filtered[text_columns].fillna('').astype(str).apply(
+    #     lambda row: row.str.contains('Trump', case=False, na=False).any(), axis=1
+    # )
+    # df_filtered = df_filtered[trump_mask
     logger.info(f"Filtered from {len(df.columns)} to {len(existing_columns)} columns")
     
     # Save as Excel

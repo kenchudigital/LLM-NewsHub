@@ -126,22 +126,22 @@ os.system(f"python evaluate/evaluate.py --date {today}")
 
 Evaluation Prompt: [LINK](evaluate/prompt.py)
 
-USE LLM model ` Alibaba Qwen-Max-Latest` to evaluate
-- Coherence
-- Factual Accuracy
-- Writing Quality
-- Completeness
-- Bias Neutrality
-according to the generated content and the sources of generated content.
 
-Other ML:
-- Text Length 
-- Flesch Reading Ease, Flesch-Kincaid Grade, Coleman-Liau Index
-```python
-from textstat import flesch_reading_ease, flesch_kincaid_grade, coleman_liau_index
+## Step7: Knowledge Graph for UI chatbot interaction
+
+generate the knowledge graph via:
+
+```bash
+os.system(f"python data/output/generate_kg.py")
 ```
-- Sentisement
-- Fake News Probability (according to our model)
-- Similarity with the sources of generated content
 
+However, you need to manually to adjust the knowledge graph data in this file ! 
+
+After that upload it to the Alibaba Cloud !
+
+![Img](z-img/kg-demo.png)
+
+AND
+
+![Img](z-img/kg-demo2.png)
 
