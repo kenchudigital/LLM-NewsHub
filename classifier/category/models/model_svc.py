@@ -97,7 +97,7 @@ class SVCClassifier(BaseClassifier):
                             
                             # Update best model if current is better
                             if accuracy > best_accuracy:
-                                print("📈 New best model found!")
+                                print("New best model found!")
                                 best_accuracy = accuracy
                                 best_params = params
                                 self.model = current_model

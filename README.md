@@ -18,17 +18,10 @@ git submodule add https://github.com/Rudrabha/Wav2Lip
 
 ## Quick Start - [LINK](/quick_start.md)
 
-## Facing issue
-
-- request ticket for docker login in `Alibaba Container Registry`
-
 ## Demo 
 
 ![Demo](z-img/demo.gif)
 
-## Potential Optimize
-
-[SO DIFFICULT TO HANDLE `GRAPH` IN `JAVASCRIPT` BUT HANDLE IN `PYTHON SCRIPT` NEED TO PROVIDE THE FIXED CONTENT OR CREATE THE `API CALL` FOR THAT]
 
 ## My env
 ```

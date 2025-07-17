@@ -47,7 +47,7 @@ python run_all.py
 
 ```bash
 # Fundus (news publisher)
-python scrapers/fundus/scraper.py --date "2025-06-21"
+python scrapers/fundus/scraper.py --date "2025-06-21" # ok
 
 # Reddit (Social Media) 
 python scrapers/reddit/scraper.py # only that day information
@@ -56,21 +56,17 @@ python scrapers/reddit/scraper.py # only that day information
 
 ## Card Generation
 ```bash
-python card/event/process.py --date "2025-06-21"
-python card/statement/process.py --date "2025-06-21"
+python card/event/process.py --date "2025-06-21" # ok
+python card/statement/process.py --date "2025-06-21" # ok
 ```
 
 ## Cluster
 ```bash
-python cluster/group_content.py --date "2025-06-21"  
+python cluster/group_content.py --date "2025-06-21" # ok
 python cluster/regroup_with_size_limits.py --date "2025-06-21" 
 ```
 
 ## Content Generation
-```bash
-# output: data/group/{date}/articles_df.csv | comments_df.csv | events_df.csv | post_df.csv
-python generate_article/generate_data.py --date "2025-06-21"
-```
 
 ```bash
 # output: data/output/article/{date}/group_{n}.json (LLM generate)

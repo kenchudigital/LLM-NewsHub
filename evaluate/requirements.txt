@@ -1,0 +1,24 @@
+# Core dependencies
+pandas>=1.5.0
+numpy>=1.21.0
+matplotlib>=3.5.0
+seaborn>=0.11.0
+
+# NLP Libraries
+nltk>=3.8.0
+rouge-score>=0.1.0
+sentence-transformers>=2.2.0
+transformers>=4.21.0
+torch>=1.12.0
+scikit-learn>=1.1.0
+
+# Text analysis
+textstat>=0.7.0
+
+# Optional GPU support
+# torch-audio  # Uncomment if using GPU
+# torch-vision  # Uncomment if using GPU
+
+# For development and testing
+pytest>=7.0.0
+jupyter>=1.0.0 

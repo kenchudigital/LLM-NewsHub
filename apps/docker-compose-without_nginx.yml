@@ -9,8 +9,6 @@ services:
       - DEBUG=false
     volumes:
       - ./static:/app/static:ro
-      - ./data:/app/data:ro
-      - ./knowledge.txt:/app/knowledge.txt:ro
     env_file:
       - ../.env
     restart: unless-stopped

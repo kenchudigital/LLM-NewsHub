@@ -27,8 +27,11 @@ Key requirements:
 4. Include relevant quotes and citations
 5. Structure the article with a clear headline, lead, and body
 6. Always respond with valid JSON only
-7. For the reliability_score, you need to summaries all features including:
-    - composite_score
+7. For the reliability_score, you need to calculate:
+    x = the max score of composite_score in different sources (weight: 0.5)
+    y = the average score of fake_news_score in different sources (weight: 0.5)
+    reliability_score = (x + (-1) *y) / 2 # because the fake_news_score is the opposite of the reliability_score
+    note: for the reddit, you can directly use the average of (fake_news_score * -1) as the reliability_score
 8. If there is irrelevant content in this group, please remove it !
 9. Body should be the good story telling and seperate into different section.
 

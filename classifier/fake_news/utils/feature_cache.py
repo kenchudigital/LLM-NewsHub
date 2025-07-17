@@ -32,11 +32,11 @@ def load_features(split_type: str) -> Optional[Tuple[np.ndarray, np.ndarray]]:
     try:
         cached_data = joblib.load(cache_path)
         if cached_data['feature_version'] != FEATURE_CACHE_CONFIG['feature_version']:
-            print(f"⚠️ Cached features version mismatch. Recomputing...")
+            print(f"Cached features version mismatch. Recomputing...")
             return None
             
-        print(f"📂 Loaded {split_type} features from cache")
+        print(f"Loaded {split_type} features from cache")
         return cached_data['X'], cached_data['y']
     except Exception as e:
-        print(f"⚠️ Error loading cached features: {str(e)}")
+        print(f"Error loading cached features: {str(e)}")
         return None 

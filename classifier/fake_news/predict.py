@@ -5,6 +5,7 @@ from typing import Union, List, Dict
 import pandas as pd
 from .utils.feature_extractor import FeatureExtractor
 from .utils.sentiment_utils import SentimentAnalyzer
+import argparse
 
 class FakeNewsPredictor:
     def __init__(self, model_path: str = "classifier/fake_news/models/results/random_forest_model.joblib"):
@@ -65,7 +66,6 @@ def predict_fake_news(text: Union[str, List[str]],
     return predictor.predict(text)
 
 if __name__ == "__main__":
-    import argparse
     
     parser = argparse.ArgumentParser(description='Predict fake news probability')
     parser.add_argument('--text', type=str, required=True, help='Text to classify')

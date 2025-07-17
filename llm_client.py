@@ -50,9 +50,9 @@ class LLMClient:
         self,
         prompt_content: str,
         system_content: str = '你是一個傻瓜Agent',
-        temperature: float = 0.5,
-        top_p: float = 0.5,
-        model: str = 'gpt-4o-mini',  # Default model, adjust as needed
+        temperature: float = 0, # next need to be 0
+        top_p: float = 0.5, # 
+        model: str = 'gpt-4o-mini',  
         **kwargs
     ) -> str:
         try:

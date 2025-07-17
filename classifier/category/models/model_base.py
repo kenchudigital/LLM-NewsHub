@@ -108,4 +108,4 @@ class BaseClassifier:
         save_path = Path(path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(self, str(save_path))
-        print(f"\n💾 Model saved to: {path}")
+        print(f"\nModel saved to: {path}")

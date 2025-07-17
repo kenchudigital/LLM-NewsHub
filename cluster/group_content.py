@@ -115,24 +115,19 @@ class ContentGrouper:
     def evaluate_clustering_performance(self, kmeans_model, tfidf_matrix, n_clusters):
         """Evaluate clustering performance using multiple metrics"""
         try:
-            # Get cluster labels
             cluster_labels = kmeans_model.labels_
-            
-            # Calculate silhouette score (higher is better)
+
             silhouette_avg = silhouette_score(tfidf_matrix, cluster_labels)
             
-            # Get inertia (lower is better, but we need to consider the trade-off)
             inertia = kmeans_model.inertia_
             
-            # Calculate normalized inertia (inertia per sample)
             inertia_per_sample = inertia / tfidf_matrix.shape[0]
             
-            # Calculate cluster size distribution
             unique_labels, counts = np.unique(cluster_labels, return_counts=True)
             size_variance = np.var(counts)  # Lower variance means more balanced clusters
             
             # Calculate a combined score (higher is better)
-            # We want high silhouette, low inertia, and balanced cluster sizes
+            # We want high silhouette, low inertia, and balanced cluster sizes - TODO: use better way !
             combined_score = silhouette_avg - (inertia_per_sample / 1000) - (size_variance / 1000)
             
             return {
@@ -464,17 +459,11 @@ if __name__ == "__main__":
         print("Error: Date must be in YYYY-MM-DD format")
         sys.exit(1)
 
-# 讀取 fundus 數據
-df = pd.read_csv('data/raw/fundus/2025-06-21/2025-06-21.csv')
-
-# 統計唯一發布商數量
-unique_publishers = df['publisher'].nunique()
-print(f"Unique publishers: {unique_publishers}")
-
-# 顯示發布商列表
-publishers = df['publisher'].unique()
-print(f"Publisher list: {list(publishers)}")
-
-# 統計每個發布商的文章數量
-publisher_counts = df['publisher'].value_counts()
-print(f"Publisher counts:\n{publisher_counts}")
+# printing to see something !
+# df = pd.read_csv('data/raw/fundus/2025-06-21/2025-06-21.csv')
+# unique_publishers = df['publisher'].nunique()
+# print(f"Unique publishers: {unique_publishers}")
+# publishers = df['publisher'].unique()
+# print(f"Publisher list: {list(publishers)}")
+# publisher_counts = df['publisher'].value_counts()
+# print(f"Publisher counts:\n{publisher_counts}")

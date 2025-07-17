@@ -139,6 +139,8 @@ nbformat==5.10.4
 nest-asyncio==1.6.0
 networkx==3.3
 nltk==3.9.1
+rouge-score==0.1.2
+tiktoken==0.8.0
 notebook==7.4.3
 notebook_shim==0.2.4
 numba==0.61.2

@@ -284,50 +284,61 @@ def save_knowledge_graph_data(kg_data, output_dir):
         'article_headline',
         'article_subheadline',
         'article_lead',
-        'article_conclusion',
+        # 'article_conclusion',
         
         # Event details
-        'event_type',
-        'event_description',
-        'event_date',
-        'event_time',
-        'event_location',
-        'event_organizer',
-        'event_people_involved',
-        'event_connections',
-        'event_statement_or_comment',
-        'event_statement_source',
+        # 'event_type',
+        # 'event_description',
+        # 'event_date',
+        # 'event_time',
+        # 'event_location',
+        # 'event_organizer',
+        # 'event_people_involved',
+        # 'event_connections',
+        # 'event_statement_or_comment',
+        # 'event_statement_source',
         'event_summary',
         'event_news_category',
         
         # Content information
         'event_title',
-        'event_content',
-        'event_topic',
-        'event_keywords',
-        'event_publish_time',
-        'event_link',
-        'event_publisher',
-        'event_publisher_country',
-        'event_language',
-        'event_word_count',
-        'event_publish_date',
-        'event_domain',
+        # 'event_content',
+        # 'event_topic',
+        # 'event_keywords',
+        # 'event_publish_time',
+        # 'event_link',
+        # 'event_publisher',
+        # 'event_publisher_country',
+        # 'event_language',
+        # 'event_word_count',
+        # 'event_publish_date',
+        # 'event_domain',
         
         # Source credibility (basic)
-        'event_source',
-        'event_country',
-        'event_credibility',
-        'event_media_type',
+        # 'event_source',
+        # 'event_country',
+        # 'event_credibility',
+        # 'event_media_type',
         
         # Image information
-        'event_image_caption',
-        'event_image_url',
+        # 'event_image_caption',
+        # 'event_image_url',
     ]
     
     # Filter columns that exist in the dataframe
     existing_columns = [col for col in useful_columns if col in df.columns]
-    df_filtered = df[existing_columns].tail(100)
+    df_filtered = df[existing_columns]
+    
+
+    text_columns = ['article_category', 'article_headline', 'article_subheadline', 'article_lead', 
+                   'event_summary', 'event_news_category', 'event_title']
+    
+    # Create a mask for rows containing "Trump" (case-insensitive)
+    trump_mask = df_filtered[text_columns].fillna('').astype(str).apply(
+        lambda row: row.str.contains('Trump', case=False, na=False).any(), axis=1
+    )
+    df_filtered = df_filtered[trump_mask]
+    
     
     logger.info(f"Filtered from {len(df.columns)} to {len(existing_columns)} columns")
     
