@@ -68,7 +68,7 @@ def generate_summary_prompt(articles):
     combined_content = "\n\n" + "="*50 + "\n\n".join(all_content)
     
     prompt = f"""
-Please generate a summary of the following news articles.
+Please generate a summary of the following news articles. 
 
 <example>
     Good evening, I'm your AI Reporter. Today's top story: The Middle East crisis has reached new heights. Israel launched its most intense attack yet on Tehran, targeting the notorious Evin prison, while the US dropped massive bunker-buster bombs on Iran's nuclear sites. President Trump called it a 'Bullseye' and openly discussed regime change, prompting Iran to threaten: 'Mr Trump, the gambler, you may start this war, but we will be the ones to end it.'
@@ -81,7 +81,7 @@ Please generate a summary of the following news articles.
 {combined_content}
 </news_articles>
 
-Please generate a comprehensive summary in the same style as the example above, covering the main stories from all articles provided.
+Please generate a comprehensive summary in the same style as the example above, covering the main stories from all articles provided. The length of the speech should be around 1 mintues.
 """
     
     return prompt

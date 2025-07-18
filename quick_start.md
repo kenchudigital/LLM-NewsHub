@@ -134,11 +134,13 @@ python deployment/audio/tts.py --speech deployment/summary/resource/summary.txt 
 
 # do the Wav2Lip manually
 # summary
+conda activate llm-news-video && \
 cd deployment/Wav2Lip && python inference.py \
   --checkpoint_path checkpoints/wav2lip_gan.pth \
   --face samples/face.mp4 \
-  --audio ../summary/summary.mp3 \
+  --audio ../summary/resource/summary.mp3 \
   --outfile ../summary/resource/news_report.mp4
+conda activate llm-news && cd .. && cd ..
 
 python deployment/summary/merge_video.py
 python deployment/summary/add_bg_music.py
