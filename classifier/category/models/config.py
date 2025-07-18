@@ -27,7 +27,7 @@ VISUALIZATIONS_DIR = RESULTS_DIR / "visualizations"
 # Create directories if they don't exist
 # Commented out empty directories that don't need to be pre-created
 for directory in [
-    DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, 
+    DATA_DIR, RAW_DATA_DIR, 
     MODEL_DIR, BEST_MODEL_DIR, 
     # CHECKPOINT_DIR,  # Commented: model_checkpoints is empty and created on-demand
     RESULTS_DIR,
