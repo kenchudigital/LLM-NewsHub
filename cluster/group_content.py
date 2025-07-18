@@ -220,7 +220,7 @@ class ContentGrouper:
                 min_clusters = 5  # Default fallback
             
             # Set range for testing
-            max_clusters = min(50, len(fundus_df) // 2)  # Don't exceed half the data size
+            max_clusters = min(80, len(fundus_df)//2)  # Don't exceed half the data size
             test_range = range(min_clusters, max_clusters + 1)
         
         print(f"Testing n_clusters range: {list(test_range)}")
@@ -251,14 +251,36 @@ class ContentGrouper:
                 print(f"  Error with n_clusters={n_clusters}: {e}")
                 continue
         
+        # After collecting performance_results for all n_clusters
+        silhouette_scores = [performance_results[n]['silhouette_score'] for n in sorted(performance_results)]
+        n_clusters_list = sorted(performance_results)
+
+        # Calculate slopes (differences)
+        slopes = [silhouette_scores[i+1] - silhouette_scores[i] for i in range(len(silhouette_scores)-1)]
+
+        # Set a threshold for minimal improvement
+        threshold = 0.00005 # You can adjust this
+
+        # Find the first n where the slope is less than the threshold
+        optimal_n = n_clusters_list[-1]  # Default to last if no plateau found
+        for i, slope in enumerate(slopes):
+            if abs(slope) < threshold:
+                print(f'slope: {slope}')
+                optimal_n = n_clusters_list[i]
+                print(f"Plateau detected at n_clusters={optimal_n} (slope={slope:.4f})")
+                break
+
+        print(f"Selected n_clusters based on silhouette plateau: {optimal_n}")
+
         # Find optimal number of clusters
         if performance_results:
             # Use combined score to find the best n_clusters
-            best_n_clusters = max(performance_results.keys(), 
-                                key=lambda x: performance_results[x]['combined_score'])
+            # best_n_clusters = max(performance_results.keys(), 
+            #                     key=lambda x: performance_results[x]['combined_score'])
             
-            print(f"\nOptimal n_clusters found: {best_n_clusters}")
-            print(f"Best combined score: {performance_results[best_n_clusters]['combined_score']:.4f}")
+            best_n_clusters = optimal_n
+            # print(f"\nOptimal n_clusters found: {best_n_clusters}")
+            # print(f"Best combined score: {performance_results[best_n_clusters]['combined_score']:.4f}")
             
             # Plot performance analysis
             self.plot_clustering_performance(performance_results)

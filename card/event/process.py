@@ -327,7 +327,11 @@ def process_fundus_data(date: str):
         confidence_score = calculate_confidence_score(max_probability)
         # Add metadata to each event
         for event in events:
-            event_data = event.copy()
+            try:
+                event_data = event.copy()
+            except Exception as e:
+                print(f"Warning: Skipping event due to error: {e} (event: {event})")
+                continue
             # Add event card data
             event_data.update({
                 'summary': result.get('summary', ''),

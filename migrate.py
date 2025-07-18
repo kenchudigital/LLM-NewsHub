@@ -74,6 +74,25 @@ def copy_files(source_dir, dest_dir, file_type):
     return copied_count
 
 
+def copy_single_file(source_file, dest_file, file_type):
+    """Copy a single file from source to destination"""
+    if not os.path.exists(source_file):
+        print(f"Source file not found: {source_file}")
+        return 0
+    
+    # Create destination directory
+    dest_dir = os.path.dirname(dest_file)
+    create_directory_if_not_exists(dest_dir)
+    
+    try:
+        shutil.copy2(source_file, dest_file)
+        print(f"Copied {file_type}: {os.path.basename(source_file)}")
+        return 1
+    except Exception as e:
+        print(f"Error copying {os.path.basename(source_file)}: {str(e)}")
+        return 0
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Migrate files from data/output to apps/static directories"
@@ -130,6 +149,14 @@ def main():
             'type': 'resources'
         }
     ]
+
+    # Add summary video migration
+    summary_video_migration = {
+        'source': 'deployment/summary/resource/summary.mp4',
+        'dest': f'apps/static/summary-video/{date}/summary.mp4',
+        'type': 'summary video'
+    }
+    migrations.append(summary_video_migration)
     
     total_copied = 0
     
@@ -152,7 +179,14 @@ def main():
             else:
                 print(f"   Source directory not found")
         else:
-            copied = copy_files(source_dir, dest_dir, file_type)
+            if file_type == 'summary video':
+                copied = copy_single_file(
+                    summary_video_migration['source'], 
+                    summary_video_migration['dest'], 
+                    summary_video_migration['type']
+                )
+            else:
+                copied = copy_files(source_dir, dest_dir, file_type)
             total_copied += copied
     
     if args.dry_run:

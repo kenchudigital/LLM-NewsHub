@@ -18,7 +18,7 @@ def create_animated_logo():
     resource_dir.mkdir(exist_ok=True)
     logo_video = resource_dir / "logo_intro.mp4"
     
-    print("Creating animated AI News Sense logo with audio...")
+    print("Creating animated logo...")
     
     ffmpeg_cmd = [
         "ffmpeg",
@@ -52,7 +52,7 @@ def create_animated_logo():
     
     try:
         subprocess.run(ffmpeg_cmd, check=True, capture_output=True, text=True)
-        print(f"Logo video with audio created: {logo_video}")
+        print("Animated logo created successfully")
         return True
     except subprocess.CalledProcessError as e:
         print(f"Error creating logo: {e}")
@@ -67,7 +67,7 @@ def create_basic_logo():
     resource_dir.mkdir(exist_ok=True)
     logo_video = resource_dir / "logo_intro.mp4"
     
-    print("Creating basic logo with silent audio...")
+    print("Creating basic logo...")
     
     ffmpeg_cmd = [
         "ffmpeg",
@@ -91,7 +91,7 @@ def create_basic_logo():
     
     try:
         subprocess.run(ffmpeg_cmd, check=True, capture_output=True)
-        print(f"Basic logo with audio created: {logo_video}")
+        print("Basic logo created successfully")
         return True
     except Exception as e:
         print(f"Basic logo failed: {e}")
@@ -99,7 +99,7 @@ def create_basic_logo():
 
 def main():
     """Main function"""
-    print("AI News Sense Logo Creator (with audio)")
+    print("Creating AI News Sense logo...")
     
     if create_animated_logo():
         print("Logo creation complete")

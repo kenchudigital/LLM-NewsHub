@@ -28,8 +28,8 @@ nltk.download('vader_lexicon', quiet=True)
 print("Loading GLiNER model...")
 gliner_model = GLiNER.from_pretrained("urchade/gliner_largev2")
 
-# Initialize geocoder
-geolocator = Nominatim(user_agent="llm_news_app")
+# Initialize geocoder with increased timeout and rate limiting
+geolocator = Nominatim(user_agent="llm_news_app", timeout=10)  # Increased from default 1 second to 10 seconds
 
 def extract_entities(text, max_length=512):
     """
@@ -82,6 +82,9 @@ def get_location_details(location_name):
     except Exception as e:
         print(f"Warning: Geocoding failed for {location_name}: {e}")
         return None
+    finally:
+        # Add delay to respect rate limits (1 request per second)
+        time.sleep(1.1)
 
 def process_entities(text, max_length=512):
     """Process text to extract and enrich entities"""
@@ -226,10 +229,15 @@ def calculate_confidence_score(probability):
 def process_comments(comments_df, date: str):
     """Process comments DataFrame with various metrics"""
     print("Processing comments...")
+    total_comments = len(comments_df)
     
     # Calculate sentiment scores
     print("Calculating sentiment scores...")
-    sentiment_scores = [analyze_sentiment(c) for c in comments_df['comment_body']]
+    sentiment_scores = []
+    for i, comment in enumerate(comments_df['comment_body']):
+        sentiment_scores.append(analyze_sentiment(comment))
+        if (i + 1) % 100 == 0:
+            print(f"Sentiment analysis: {i + 1}/{total_comments} ({((i + 1)/total_comments)*100:.1f}%)")
     
     # Add sentiment columns
     comments_df['polarity'] = [ss['textblob_polarity'] for ss in sentiment_scores]
@@ -241,7 +249,11 @@ def process_comments(comments_df, date: str):
     
     # Extract entities with length limit
     print("Extracting entities from comments...")
-    entity_results = [process_entities(text, max_length=512) for text in comments_df['comment_body']]
+    entity_results = []
+    for i, text in enumerate(comments_df['comment_body']):
+        entity_results.append(process_entities(text, max_length=512))
+        if (i + 1) % 50 == 0:  # Progress every 50 comments due to geocoding delays
+            print(f"Entity extraction: {i + 1}/{total_comments} ({((i + 1)/total_comments)*100:.1f}%)")
     
     # Add entity columns
     comments_df['persons'] = [result['entities']['person'] for result in entity_results]
@@ -286,11 +298,17 @@ def process_comments(comments_df, date: str):
 def process_posts(posts_df, date: str):
     """Process posts DataFrame with various metrics"""
     print("Processing posts...")
+    total_posts = len(posts_df)
     
     # Calculate sentiment scores for title and content
     print("Calculating sentiment scores...")
-    title_sentiment = [analyze_sentiment(t) for t in posts_df['title']]
-    content_sentiment = [analyze_sentiment(c) for c in posts_df['content']]
+    title_sentiment = []
+    content_sentiment = []
+    for i, (title, content) in enumerate(zip(posts_df['title'], posts_df['content'])):
+        title_sentiment.append(analyze_sentiment(title))
+        content_sentiment.append(analyze_sentiment(content))
+        if (i + 1) % 50 == 0:
+            print(f"Sentiment analysis: {i + 1}/{total_posts} ({((i + 1)/total_posts)*100:.1f}%)")
     
     # Add sentiment columns for title
     posts_df['title_polarity'] = [ss['textblob_polarity'] for ss in title_sentiment]
@@ -311,9 +329,13 @@ def process_posts(posts_df, date: str):
     # Extract entities from title and content with length limits
     print("Extracting entities from posts...")
     # For titles, use shorter limit since they're typically shorter
-    title_entities = [process_entities(text, max_length=256) for text in posts_df['title']]
-    # For content, use longer limit
-    content_entities = [process_entities(text, max_length=512) for text in posts_df['content']]
+    title_entities = []
+    content_entities = []
+    for i, (title, content) in enumerate(zip(posts_df['title'], posts_df['content'])):
+        title_entities.append(process_entities(title, max_length=256))
+        content_entities.append(process_entities(content, max_length=512))
+        if (i + 1) % 25 == 0:  # Progress every 25 posts due to geocoding delays
+            print(f"Entity extraction: {i + 1}/{total_posts} ({((i + 1)/total_posts)*100:.1f}%)")
     
     # Combine entities from title and content
     combined_entities = []

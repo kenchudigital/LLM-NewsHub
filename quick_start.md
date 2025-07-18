@@ -128,6 +128,11 @@ python migrate.py --date "2025-06-21"
 ```bash
 # python deployment/wav2lip.py --date "2025-06-21"
 
+# python deployment/summary/add_logo.py # for first time only
+python deployment/summary/generate_summary.py
+python deployment/audio/tts.py --speech deployment/summary/resource/summary.txt --output deployment/summary/resource/summary.mp3 --voice us
+
+# do the Wav2Lip manually
 # summary
 cd deployment/Wav2Lip && python inference.py \
   --checkpoint_path checkpoints/wav2lip_gan.pth \
@@ -135,11 +140,9 @@ cd deployment/Wav2Lip && python inference.py \
   --audio ../summary/summary.mp3 \
   --outfile ../summary/resource/news_report.mp4
 
-# python deployment/summary/add_logo.py # for first time only
 python deployment/summary/merge_video.py
 python deployment/summary/add_bg_music.py
-# Copy summary.mp4 to the apps static directory
-cp deployment/summary/resource/summary.mp4 apps/static/summary-video/summary.mp4
+cp deployment/summary/resource/summary.mp4 apps/static/summary-video/{date}/summary.mp4
 ```
 
 ## UI

@@ -55,6 +55,7 @@ data/output/article/*
 
 # Eval
 data/eval/*
+data/eval_token_log/*
 
 # Output
 data/output/article/*
@@ -118,3 +119,5 @@ apps/frontend/src/components/ChatBot_backup.tsx
 apps/frontend/src/components/ChatBot_copy.tsx
 
 data/output/knowledge_graph/knowledge_graph.xlsx
+
+utility_room/*

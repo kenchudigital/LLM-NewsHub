@@ -11,7 +11,7 @@ sys.path.append(str(project_root))
 # Data paths
 DATA_DIR = project_root / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
-PROCESSED_DATA_DIR = DATA_DIR / "processed"
+# PROCESSED_DATA_DIR = DATA_DIR / "processed"
 
 # Model paths
 MODEL_DIR = project_root / "classifier" / "category" / "models"

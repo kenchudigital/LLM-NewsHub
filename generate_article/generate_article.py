@@ -74,7 +74,7 @@ def log_token_usage_unified(date_str: str, group_id: int, model: str, publisher:
     }
     
     # Ensure log directory exists
-    log_dir = Path(f"data/eval_compare/{date_str}")
+    log_dir = Path(f"data/eval_token_log/{date_str}")
     log_dir.mkdir(parents=True, exist_ok=True)
     
     # Unified log file for all groups

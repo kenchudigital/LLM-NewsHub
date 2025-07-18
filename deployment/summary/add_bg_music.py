@@ -26,9 +26,7 @@ def add_background_music():
         print(f"Error: Background music file not found: {bg_music_file}")
         return False
     
-    print(f"Input video: {video_file}")
-    print(f"Background music: {bg_music_file}")
-    print(f"Output file: {output_file}")
+    print("Adding background music...")
     
     # Ultra-simple approach - minimal processing
     cmd = [
@@ -47,10 +45,8 @@ def add_background_music():
     ]
     
     try:
-        print("Running ultra-simple background music...")
-        print(" ".join(cmd))
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        print("Successfully added background music!")
+        print("Background music added successfully")
         return True
         
     except subprocess.CalledProcessError as e:
@@ -89,13 +85,13 @@ def fallback_method():
 
 def main():
     """Main function"""
-    print("Adding background music (ultra-simple method)...")
+    print("Adding background music...")
     success = add_background_music()
     
     if success:
-        print("\nDone! Video with background music is ready.")
+        print("Background music processing complete")
     else:
-        print("\nFailed to create video with background music.")
+        print("Failed to add background music")
         sys.exit(1)
 
 if __name__ == "__main__":
