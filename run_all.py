@@ -12,6 +12,9 @@ if __name__ == "__main__":
     
     print(f'process date: {today}')
     # will run this every day on the cloud (ECS in Alibaba Cloud)
+
+    # prepare your stable diffusion server before start !
+
     print('Scraping: ...')
     os.system(f"python scrapers/fundus/scraper.py --date {today}")
     os.system(f"python scrapers/reddit/scraper.py")
@@ -51,7 +54,7 @@ cd deployment/Wav2Lip && python inference.py \
   --audio ../summary/resource/summary.mp3 \
   --outfile ../summary/resource/news_report.mp4 && \
 conda activate llm-news && cd ../..
-""")
+""") # need to update which summary video to use
     os.system("python deployment/summary/merge_video.py")
     os.system("python deployment/summary/add_bg_music.py")
     os.system(f"cp deployment/summary/resource/summary.mp4 apps/static/summary-video/{today}/summary.mp4")
@@ -59,7 +62,7 @@ conda activate llm-news && cd ../..
     print('migrate the data to the UI database...')
     os.system(f"python migrate.py --date {today}")
 
-    print(datetime.now())
+    print(datetime.now()) 
 
 # Optional
 
