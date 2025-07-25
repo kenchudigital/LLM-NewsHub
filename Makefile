@@ -3,18 +3,6 @@
 
 .PHONY: help install install-dev setup-nltk clean test run-frontend run-backend run-all
 
-# Default target
-help:
-	@echo "Available commands:"
-	@echo "  install      - Install production dependencies"
-	@echo "  install-dev  - Install development dependencies"
-	@echo "  setup-nltk   - Download required NLTK data (fixes Resource not found errors)"
-	@echo "  clean        - Clean up cache and temporary files"
-	@echo "  test         - Run tests"
-	@echo "  run-frontend - Start the frontend application"
-	@echo "  run-backend  - Start the backend API"
-	@echo "  run-all      - Start both frontend and backend"
-
 # Install production dependencies
 install:
 	@echo "Installing production dependencies..."
@@ -39,21 +27,6 @@ setup-nltk-alt:
 	python -c "import nltk; import ssl; ssl._create_default_https_context = ssl._create_unverified_context; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('wordnet'); nltk.download('omw-1.4'); nltk.download('vader_lexicon'); nltk.download('averaged_perceptron_tagger'); print('NLTK data downloaded successfully!')"
 	@echo "NLTK setup completed!"
 
-# Clean up cache and temporary files
-clean:
-	@echo "Cleaning up..."
-	find . -type f -name "*.pyc" -delete
-	find . -type d -name "__pycache__" -delete
-	find . -type d -name "*.egg-info" -exec rm -rf {} +
-	find . -type d -name ".pytest_cache" -exec rm -rf {} +
-	find . -type d -name ".mypy_cache" -exec rm -rf {} +
-	@echo "Cleanup completed!"
-
-# Run tests
-test:
-	@echo "Running tests..."
-	python -m pytest tests/ -v --cov=.
-
 # Start frontend application
 run-frontend:
 	@echo "Starting frontend..."
@@ -64,16 +37,6 @@ run-backend:
 	@echo "Starting backend API..."
 	cd apps && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Start both frontend and backend (requires tmux or similar)
-run-all:
-	@echo "Starting both frontend and backend..."
-	@echo "Note: This requires tmux. Install with: brew install tmux (macOS) or apt-get install tmux (Ubuntu)"
-	tmux new-session -d -s llm-newshub
-	tmux split-window -h -t llm-newshub
-	tmux send-keys -t llm-newshub:0.0 "make run-backend" Enter
-	tmux send-keys -t llm-newshub:0.1 "make run-frontend" Enter
-	tmux attach-session -t llm-newshub
-
 # Full setup (install + setup-nltk)
 setup: install setup-nltk
 	@echo "Full setup completed!"
@@ -82,19 +45,13 @@ setup: install setup-nltk
 setup-dev: install-dev setup-nltk
 	@echo "Development setup completed!"
 
-# Docker commands
-docker-build:
-	@echo "Building Docker image..."
-	docker build -t llm-newshub .
-
-docker-run:
-	@echo "Running Docker container..."
-	docker run -p 8000:8000 -p 3000:3000 llm-newshub
-
 # Data processing commands
-process-data:
-	@echo "Processing data..."
-	python run_all.py
+run-all:
+	@echo "Running main data processing pipeline..."
+	conda run -n llm-news python run_all.py --date "2025-07-22"
+	@echo "Running video generation in llm-news-video environment..."
+	conda run -n llm-news-video python run_all2.py --date "2025-07-22"
+	@echo "Pipeline completed!"
 
 # Model training commands
 train-fake-news:
@@ -104,10 +61,3 @@ train-fake-news:
 train-category:
 	@echo "Training category classifier..."
 	cd classifier/category && python run_pipeline.py
-
-# Debug NLTK issues
-debug-nltk:
-	@echo "Debugging NLTK installation..."
-	python -c "import nltk; print('NLTK version:', nltk.__version__); print('NLTK data path:', nltk.data.path)"
-	@echo "Checking punkt tokenizer..."
-	python -c "from nltk.tokenize import word_tokenize; print('Punkt tokenizer test:', word_tokenize('Hello world!'))" 

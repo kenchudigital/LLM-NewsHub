@@ -39,32 +39,40 @@ if __name__ == "__main__":
     os.system(f"python deployment/image/main.py --date {today}")
 
 # ---
-    # video generation please see quick_start.md
+    # print('migrate the data to the UI database...')
+    # os.system(f"python migrate.py --date {today}")
+
+    print(datetime.now()) 
 
     print('Video Generation: ...')
     os.system(f"python deployment/summary/generate_summary.py --date {today}")
 
     os.system("python deployment/audio/tts.py --speech deployment/summary/resource/summary.txt --output deployment/summary/resource/summary.mp3 --voice us")
 
-    os.system(f"""
-conda activate llm-news-video && \
-cd deployment/Wav2Lip && python inference.py \
-  --checkpoint_path checkpoints/wav2lip_gan.pth \
-  --face samples/face.mp4 \
-  --audio ../summary/resource/summary.mp3 \
-  --outfile ../summary/resource/news_report.mp4 && \
-conda activate llm-news && cd ../..
-""") # need to update which summary video to use
-    os.system("python deployment/summary/merge_video.py")
-    os.system("python deployment/summary/add_bg_music.py")
-    os.system(f"cp deployment/summary/resource/summary.mp4 apps/static/summary-video/{today}/summary.mp4")
-
-    print('migrate the data to the UI database...')
-    os.system(f"python migrate.py --date {today}")
-
-    print(datetime.now()) 
 
 # Optional
+
+    # video generation please see quick_start.md
+
+    # print('Video Generation: ...')
+    # os.system(f"python deployment/summary/generate_summary.py --date {today}")
+
+    # os.system("python deployment/audio/tts.py --speech deployment/summary/resource/summary.txt --output deployment/summary/resource/summary.mp3 --voice us")
+
+#     os.system(f"""
+# conda activate llm-news-video && \
+# cd deployment/Wav2Lip && python inference.py \
+#   --checkpoint_path checkpoints/wav2lip_gan.pth \
+#   --face samples/face.mp4 \
+#   --audio ../summary/resource/summary.mp3 \
+#   --outfile ../summary/resource/news_report.mp4 && \
+# conda activate llm-news && cd ../..
+# """) 
+    # need to update which summary video to use
+    # os.system("python deployment/summary/merge_video.py")
+    # os.system("python deployment/summary/add_bg_music.py")
+    # os.system(f"cp deployment/summary/resource/summary.mp4 apps/static/summary-video/2025-07-18/summary.mp4")
+
 
     # print('Evaluate the content...') 
     # os.system(f"python evaluate/evaluate.py --date {today}")

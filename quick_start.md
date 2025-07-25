@@ -2,6 +2,14 @@
 
 All script can be run at the root /
 
+```bash
+# RUN ALL
+conda activate llm-news
+python run_all.py --date "your_date"
+conda activate llm-news-video
+python run_all2.py --date "your_date"
+```
+
 ## Pre install the trust score data
 
 ```bash

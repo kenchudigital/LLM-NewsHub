@@ -7,7 +7,7 @@ router = APIRouter()
 @router.get("/summary-date")
 async def get_summary_date():
     """Get the summary video date from configuration"""
-    summary_date = os.getenv('SUMMARY_DATE', '2025-07-12')
+    summary_date = os.getenv('SUMMARY_DATE', '2025-07-26')
     
     return {
         "date": summary_date,
@@ -17,7 +17,7 @@ async def get_summary_date():
 @router.get("")
 async def get_config():
     """Get application configuration"""
-    summary_date = os.getenv('SUMMARY_DATE', '2025-07-12')
+    summary_date = os.getenv('SUMMARY_DATE', '2025-07-26')
     
     return {
         "app_name": "AI NewsSense",

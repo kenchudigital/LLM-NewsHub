@@ -220,7 +220,7 @@ class ContentGrouper:
                 min_clusters = 5  # Default fallback
             
             # Set range for testing
-            max_clusters = min(80, len(fundus_df)//2)  # Don't exceed half the data size
+            max_clusters = min(65, len(fundus_df)//3)  # Don't exceed half the data size
             test_range = range(min_clusters, max_clusters + 1)
         
         print(f"Testing n_clusters range: {list(test_range)}")
@@ -259,7 +259,7 @@ class ContentGrouper:
         slopes = [silhouette_scores[i+1] - silhouette_scores[i] for i in range(len(silhouette_scores)-1)]
 
         # Set a threshold for minimal improvement
-        threshold = 0.00005 # You can adjust this
+        threshold = 0.00006 # You can adjust this
 
         # Find the first n where the slope is less than the threshold
         optimal_n = n_clusters_list[-1]  # Default to last if no plateau found

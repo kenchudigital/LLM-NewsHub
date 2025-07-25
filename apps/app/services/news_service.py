@@ -187,7 +187,7 @@ class NewsService:
             if fuzzy and FUZZYWUZZY_AVAILABLE:
                 # Use fuzzy search with lower threshold for better typo tolerance
                 news_list = self.fuzzy_search_articles(news_list, search, threshold=70)
-                print(f"Fuzzy search for '{search}' returned {len(news_list)} results")
+                logger.info(f"Fuzzy search for '{search}' returned {len(news_list)} results")
             else:
                 # Use exact search (existing logic)
                 search_lower = search.lower()
@@ -197,7 +197,7 @@ class NewsService:
                           for field in ["headline", "content", "summary"]):
                         filtered_list.append(news_item)
                 news_list = filtered_list
-                print(f"Exact search for '{search}' returned {len(news_list)} results")
+                logger.info(f"Exact search for '{search}' returned {len(news_list)} results")
         
         return news_list
     
