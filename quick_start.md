@@ -1,19 +1,42 @@
 # Quick Start
 
-All script can be run at the root /
+All scripts should be run from the project root unless a section says otherwise.
+
+## Environment Setup
 
 ```bash
-# RUN ALL
+conda create -n llm-news python=3.10
 conda activate llm-news
-python run_all.py --date "your_date"
+pip install -r requirements.txt
+python setup_nltk.py
+```
+
+## Recommended Pipeline Entry Points
+
+```bash
+# Main pipeline
+conda activate llm-news
+python pipeline/run.py --date "2025-06-21"
+
+# Main pipeline with optional Wav2Lip video generation
+# Use this only if the active environment can run the Wav2Lip dependencies.
+python pipeline/run.py --date "2025-06-21" --include-video
+
+# Optional video step only
 conda activate llm-news-video
-python run_all2.py --date "your_date"
+python pipeline/run_video.py --date "2025-06-21"
+```
+
+The previous entry points are still supported:
+
+```bash
+python run_all.py --date "2025-06-21"
+python run_video_only.py --date "2025-06-21"
 ```
 
 ## Pre install the trust score data
 
 ```bash
-python scrapers/trust_score/country_index_scraper.py
 python scrapers/trust_score/country_index_scraper.py
 ```
 
@@ -25,7 +48,7 @@ python classifier/fake_news/run_pipeline.py --test-size 0.2 --random-state 42
 ```
 
 ```python
-# Fake News Classifer
+# Fake News Classifier
 from classifier.fake_news.predict import predict_fake_news
 text = "Your news article text here"
 result = predict_fake_news(text)
@@ -40,7 +63,7 @@ python classifier/category/run_pipeline.py --test "classifier/category/dataset/B
 
 ```python
 # Category
-from classifer.category.predict import predict_single_text
+from classifier.category.predict import predict_single_text
 text = "Technology giant Apple unveiled its latest iPhone model today"
 result = predict_single_text(text)
 ```
@@ -93,9 +116,9 @@ python generate_article/category_arrange.py --date "2025-06-21"
 
 ## Summary
 
-```
-# output: 
-python
+```bash
+python deployment/summary/generate_summary.py --date "2025-06-21"
+python deployment/audio/tts.py --speech deployment/summary/resource/summary.txt --output deployment/summary/resource/summary.mp3 --voice us
 ```
 
 ## Evaluate
@@ -119,10 +142,21 @@ python deployment/audio/main.py --date "2025-06-21"
 python deployment/audio/tts.py --speech deployment/summary/summary.txt --output deployment/summary/summary.mp3 --voice us
 ```
 
-## Video - Wav2Lip (Manually) - need another environment due to python package compatibility 
+## Video - Wav2Lip (Optional Advanced Step)
+
+Wav2Lip needs another environment due to Python package compatibility.
 
 ```bash
-conda create -n wav2lip python=3.8
+conda create -n llm-news-video python=3.8
+conda activate llm-news-video
+pip install -r requirements/wav2lip.txt
+```
+
+After preparing `deployment/Wav2Lip`, `checkpoints/wav2lip_gan.pth`, and `samples/face.mp4`, run:
+
+```bash
+conda activate llm-news-video
+python pipeline/run_video.py --date "2025-06-21"
 ```
 
 ## Migrate
@@ -134,25 +168,7 @@ python migrate.py --date "2025-06-21"
 ## Summary Video
 
 ```bash
-# python deployment/wav2lip.py --date "2025-06-21"
-
-# python deployment/summary/add_logo.py # for first time only
-python deployment/summary/generate_summary.py
-python deployment/audio/tts.py --speech deployment/summary/resource/summary.txt --output deployment/summary/resource/summary.mp3 --voice us
-
-# do the Wav2Lip manually
-# summary
-conda activate llm-news-video && \
-cd deployment/Wav2Lip && python inference.py \
-  --checkpoint_path checkpoints/wav2lip_gan.pth \
-  --face samples/face.mp4 \
-  --audio ../summary/resource/summary.mp3 \
-  --outfile ../summary/resource/news_report.mp4
-conda activate llm-news && cd .. && cd ..
-
-python deployment/summary/merge_video.py
-python deployment/summary/add_bg_music.py
-cp deployment/summary/resource/summary.mp4 apps/static/summary-video/{date}/summary.mp4
+python pipeline/run_video.py --date "2025-06-21"
 ```
 
 ## UI

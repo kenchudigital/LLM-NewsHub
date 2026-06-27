@@ -5,17 +5,17 @@ docker-compose -f apps/docker-compose.yml build backend
 docker-compose -f apps/docker-compose.yml build frontend
 ```
 
-After that push the image to Container Registry on the Cloud.
+For cloud deployment notes, see `../infrastructure/alibaba-cloud/`.
 
 
 # AI NewsSense - Restructured Backend
 
-This is the restructured backend application following the nexi-dashboard architecture pattern.
+This is the active web application for the LLM-NewsHub showcase. The FastAPI backend uses the modular `apps/app/` structure, and the old backend implementation has been archived under `infrastructure/legacy-backend/`.
 
 ## Project Structure
 
 ```
-new_apps/
+apps/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py                 # FastAPI application entry point
@@ -86,8 +86,8 @@ new_apps/
 
 ### Using Docker Compose (Recommended)
 ```bash
-# From the new_apps directory
-docker-compose up -d
+# From the apps directory
+docker compose up
 ```
 
 ### Using Python directly
@@ -100,7 +100,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### Environment Variables
-The application looks for a `.env` file in the project root directory (LLM-NewsGen/.env):
+The application looks for a `.env` file in the project root directory:
 ```
 OPENAI_API_KEY=your_openai_key
 ALIBABA_LLM_KEY=your_alibaba_key
@@ -113,8 +113,8 @@ DEBUG=false
 You can use the provided template:
 ```bash
 # Copy the template to the root directory
-cp env_template.txt ../../.env
-# Then edit ../../.env with your actual API keys
+cp env_template.txt ../.env
+# Then edit ../.env with your actual API keys
 ```
 
 ## Benefits of This Structure

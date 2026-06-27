@@ -1,26 +1,21 @@
 import config from '../config';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import type { NewsArticle, ArticleData } from './NewsPortal/types';
 import {
     Box,
     Container,
     Typography,
-    Paper,
     Chip,
     IconButton,
     Button,
-    Divider,
-    Link,
     Card,
     CardContent,
     CardMedia,
-    LinearProgress,
     Tooltip,
-    Grid,
     Tabs,
     Tab,
     TextField,
     InputAdornment,
-    CircularProgress,
     Fab,
     Modal,
     Backdrop,
@@ -35,31 +30,15 @@ import {
     PlayArrow,
     Pause,
     VolumeUp,
-    Share,
     BookmarkBorder,
-    Bookmark,
-    ThumbUp,
-    ThumbDown,
-    Schedule,
-    LocationOn,
-    TrendingUp,
-    Warning,
     Search as SearchIcon,
     ChevronLeft,
     ChevronRight,
-    ExpandMore,
-    ExpandLess,
     Close,
-    Chat,
     SmartToy,
     Remove,
-    AutoAwesome,
-    AllInclusive,
     CalendarToday as CalendarTodayIcon,
-    Schedule as ScheduleIcon,
     VideoLibrary,
-    Fullscreen,
-    FullscreenExit,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
@@ -67,77 +46,6 @@ import ChatBot from './ChatBot';
 // import { useNavigate } from 'react-router-dom'; // Not needed anymore
 
 // Styled components with animations
-const PortalContainer = styled(Box)(({ theme }) => ({
-    minHeight: '100vh',
-    background: `
-        radial-gradient(ellipse at top, #0a0a23 0%, #000000 50%),
-        radial-gradient(ellipse at bottom, #1a0033 0%, #000000 50%),
-        linear-gradient(135deg, 
-            #000000 0%, 
-            #0a0a0a 10%, 
-            #1a1a2e 20%, 
-            #16213e 35%, 
-            #0f3460 50%, 
-            #16213e 65%, 
-            #1a1a2e 80%, 
-            #0a0a0a 90%, 
-            #000000 100%
-        )
-    `,
-    margin: 0,
-    padding: 0,
-    position: 'relative',
-    color: 'white',
-    overflow: 'hidden',
-
-    // Animated background layers
-    '&::before': {
-        content: '""',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: `
-            radial-gradient(circle at 20% 20%, rgba(0, 234, 255, 0.08) 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(255, 106, 0, 0.06) 0%, transparent 50%),
-            radial-gradient(circle at 40% 60%, rgba(138, 43, 226, 0.04) 0%, transparent 40%),
-            radial-gradient(circle at 60% 20%, rgba(50, 205, 50, 0.03) 0%, transparent 30%)
-        `,
-        pointerEvents: 'none',
-        zIndex: 0,
-        animation: 'backgroundPulse 8s ease-in-out infinite',
-    },
-
-    // Grid overlay
-    '&::after': {
-        content: '""',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundImage: `
-            linear-gradient(rgba(0, 234, 255, 0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 234, 255, 0.02) 1px, transparent 1px)
-        `,
-        backgroundSize: '50px 50px',
-        pointerEvents: 'none',
-        zIndex: 1,
-        animation: 'gridMove 20s linear infinite',
-    },
-
-    '@keyframes backgroundPulse': {
-        '0%, 100%': { opacity: 0.6 },
-        '50%': { opacity: 1 },
-    },
-
-    '@keyframes gridMove': {
-        '0%': { transform: 'translate(0, 0)' },
-        '100%': { transform: 'translate(50px, 50px)' },
-    },
-}));
-
 const Header = styled(Box)(({ theme }) => ({
     position: 'fixed',
     top: 0,
@@ -378,33 +286,6 @@ const MainContent = styled(Box)(({ theme }) => ({
     },
 }));
 
-const ArticleContainer = styled(Paper)(({ theme }) => ({
-    flex: 1,
-    padding: '2rem',
-    borderRadius: '12px',
-    boxShadow: '0 8px 32px rgba(0, 234, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-    background: 'linear-gradient(135deg, rgba(13, 13, 13, 0.9) 0%, rgba(26, 26, 46, 0.85) 100%)',
-    border: '1px solid rgba(0, 234, 255, 0.2)',
-    backdropFilter: 'blur(10px)',
-    color: '#ffffff',
-
-    // Adjusted right margin for larger chatbot (450px + 40px buffer = 490px)
-    marginRight: '490px',
-
-    [theme.breakpoints.down('lg')]: {
-        marginRight: '440px', // For 400px chatbot + 40px buffer
-    },
-
-    [theme.breakpoints.down('md')]: {
-        marginRight: '415px', // For 375px chatbot + 40px buffer
-    },
-
-    [theme.breakpoints.down('sm')]: {
-        marginRight: '0', // Full width on mobile since chatbot overlays
-        marginBottom: '80px', // Space for collapsed chatbot
-    }
-}));
-
 // Styled components for chatbot
 const ChatContainer = styled(Box)<{ fullscreen?: boolean }>(({ theme, fullscreen }) => ({
     position: 'fixed',
@@ -512,32 +393,6 @@ const ChatToggleButton = styled(IconButton)(({ theme }) => ({
     },
 }));
 
-const FloatingChatToggle = styled(IconButton)(({ theme }) => ({
-    position: 'fixed',
-    bottom: '20px',
-    right: '20px',
-    width: '60px',
-    height: '60px',
-    background: 'linear-gradient(45deg, #ff6a00, #00eaff)',
-    color: 'white',
-    zIndex: 1001,
-    boxShadow: '0 8px 25px rgba(255, 106, 0, 0.4)',
-    animation: 'pulse 2s infinite',
-    '&:hover': {
-        background: 'linear-gradient(45deg, #00eaff, #ff6a00)',
-        transform: 'scale(1.1)',
-        boxShadow: '0 12px 35px rgba(0, 234, 255, 0.4)',
-    },
-    '@keyframes pulse': {
-        '0%': { boxShadow: '0 8px 25px rgba(255, 106, 0, 0.4)' },
-        '50%': { boxShadow: '0 12px 35px rgba(0, 234, 255, 0.5)' },
-        '100%': { boxShadow: '0 8px 25px rgba(255, 106, 0, 0.4)' },
-    },
-    [theme.breakpoints.up('lg')]: {
-        display: 'none',
-    }
-}));
-
 // Floating particles animation
 const ParticleOverlay = styled(Box)(({ theme }) => ({
     position: 'fixed',
@@ -616,191 +471,6 @@ const FooterSection = styled(Box)(({ theme }) => ({
     },
 }));
 
-const AudioBar = styled(Card)(({ theme }) => ({
-    marginBottom: '2rem',
-    background: 'linear-gradient(90deg, #0f2027 0%, #2c5364 100%)',
-    color: 'white',
-    borderRadius: '18px',
-    overflow: 'hidden',
-    boxShadow: '0 0 24px 4px #00eaff55',
-    border: '2px solid',
-    borderImage: 'linear-gradient(90deg, #00eaff 0%, #ff6a00 100%) 1',
-    position: 'relative',
-    animation: 'audioBarGlow 2.5s linear infinite',
-    '@keyframes audioBarGlow': {
-        '0%': { boxShadow: '0 0 24px 4px #00eaff55' },
-        '50%': { boxShadow: '0 0 48px 8px #ff6a0055' },
-        '100%': { boxShadow: '0 0 24px 4px #00eaff55' },
-    },
-}));
-
-const AudioControls = styled(Box)(({ theme }) => ({
-    display: 'flex',
-    alignItems: 'center',
-    padding: '1.2rem',
-    gap: '1.5rem',
-    background: 'rgba(0, 234, 255, 0.05)',
-    borderRadius: '16px',
-    boxShadow: '0 2px 12px 0 #00eaff22',
-}));
-
-const PlayPauseButton = styled(IconButton, {
-    shouldForwardProp: (prop) => prop !== 'isplaying',
-})<{ isplaying: boolean }>(({ isplaying }) => ({
-    color: 'white',
-    background: isplaying ? 'linear-gradient(90deg, #ff6a00 0%, #00eaff 100%)' : 'rgba(255,255,255,0.1)',
-    boxShadow: isplaying ? '0 0 0 6px #ff6a0033' : 'none',
-    animation: isplaying ? 'pulsePlay 1.2s infinite' : 'none',
-    '&:hover': {
-        background: 'linear-gradient(90deg, #00eaff 0%, #ff6a00 100%)',
-        transform: 'scale(1.15)',
-    },
-    '@keyframes pulsePlay': {
-        '0%': { boxShadow: '0 0 0 0 #ff6a0033' },
-        '70%': { boxShadow: '0 0 0 12px #00eaff22' },
-        '100%': { boxShadow: '0 0 0 0 #ff6a0033' },
-    },
-}));
-
-const ProgressContainer = styled(Box)(({ theme }) => ({
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.7rem',
-    background: 'rgba(44, 83, 100, 0.15)',
-    borderRadius: '8px',
-    padding: '0.3rem 0.7rem',
-}));
-
-const FloatingChatWidget = styled(Box)<{ expanded: boolean }>(({ theme, expanded }) => ({
-    position: 'fixed',
-    bottom: '20px',
-    right: '20px',
-    zIndex: 1000,
-    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-
-    // When collapsed - just an icon
-    ...(!expanded && {
-        width: '56px',
-        height: '56px',
-        borderRadius: '50%',
-        background: 'linear-gradient(135deg, #ff6a00 0%, #00eaff 100%)',
-        boxShadow: '0 8px 32px rgba(255, 106, 0, 0.4)',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        animation: 'chatPulse 3s ease-in-out infinite',
-
-        '&:hover': {
-            transform: 'scale(1.1)',
-            boxShadow: '0 12px 40px rgba(0, 234, 255, 0.5)',
-        },
-
-        '@keyframes chatPulse': {
-            '0%, 100%': { boxShadow: '0 8px 32px rgba(255, 106, 0, 0.4)' },
-            '50%': { boxShadow: '0 12px 40px rgba(0, 234, 255, 0.3)' },
-        }
-    }),
-
-    // When expanded - 25% larger width
-    ...(expanded && {
-        width: '450px', // Increased from 360px (25% larger)
-        height: '580px',
-        borderRadius: '20px',
-        background: 'linear-gradient(135deg, rgba(13, 13, 13, 0.98) 0%, rgba(26, 26, 46, 0.95) 50%, rgba(22, 33, 62, 0.92) 100%)',
-        border: '1px solid rgba(255, 106, 0, 0.3)',
-        backdropFilter: 'blur(20px)',
-        boxShadow: '0 24px 64px rgba(0, 0, 0, 0.8), 0 8px 32px rgba(255, 106, 0, 0.2)',
-        overflow: 'hidden',
-
-        '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'radial-gradient(circle at 20% 20%, rgba(255, 106, 0, 0.08) 0%, transparent 50%)',
-            pointerEvents: 'none',
-        }
-    }),
-
-    // Responsive design with 25% larger widths
-    [theme.breakpoints.down('lg')]: {
-        right: '15px',
-        bottom: '15px',
-
-        ...(expanded && {
-            width: '400px', // Increased from 320px (25% larger)
-            height: '520px',
-        })
-    },
-
-    [theme.breakpoints.down('md')]: {
-        ...(expanded && {
-            width: '375px', // Increased from 300px (25% larger)
-            height: '480px',
-        })
-    },
-
-    [theme.breakpoints.down('sm')]: {
-        ...(expanded && {
-            width: 'calc(100vw - 20px)',
-            height: '70vh',
-            right: '10px',
-            left: '10px',
-            bottom: '10px',
-        })
-    }
-}));
-
-const ChatWidgetHeader = styled(Box)(({ theme }) => ({
-    background: 'linear-gradient(135deg, rgba(255, 106, 0, 0.9) 0%, rgba(0, 234, 255, 0.7) 100%)',
-    padding: '16px 20px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: '20px 20px 0 0',
-    position: 'relative',
-
-    '&::after': {
-        content: '""',
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: '1px',
-        background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
-    }
-}));
-
-const OnlineIndicator = styled(Box)(({ theme }) => ({
-    width: '8px',
-    height: '8px',
-    borderRadius: '50%',
-    background: '#4caf50',
-    marginLeft: '8px',
-    animation: 'onlinePulse 2s ease-in-out infinite',
-
-    '@keyframes onlinePulse': {
-        '0%, 100%': { opacity: 1, transform: 'scale(1)' },
-        '50%': { opacity: 0.7, transform: 'scale(1.2)' },
-    }
-}));
-
-const CloseButton = styled(IconButton)(({ theme }) => ({
-    color: 'white',
-    width: '32px',
-    height: '32px',
-    transition: 'all 0.3s ease',
-
-    '&:hover': {
-        background: 'rgba(255, 255, 255, 0.1)',
-        transform: 'rotate(90deg)',
-    }
-}));
-
 // Date filter styled components
 const DateFilter = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -856,48 +526,7 @@ const DateButton = styled(Button)<{ selected?: boolean }>(({ theme, selected }) 
     },
 }));
 
-// Available dates for filtering
-const AVAILABLE_DATES = [
-    '2025-06-14',
-];
-
-interface NewsArticle {
-    id: number;
-    group_id: string;
-    headline: string;
-    category: string;
-    content: string;
-    summary: string;
-    date: string;
-    image_url?: string;
-}
-
-interface ArticleData {
-    id?: number;
-    group_id?: string;
-    date?: string;
-    category: string;
-    headline: string;
-    subheadline: string;
-    lead: string;
-    body: Array<{
-        section: string;
-        content: string;
-        sources: string[];
-        sentisement_from_the_content: string;
-        sentisement_from_the_posts_or_comments: string;
-        fake_news_probability: number;
-        date: string;
-        Publisher_region_diversity: string[];
-        Publishers: string[];
-    }>;
-    conclusion: string;
-    timeline: Record<string, string>;
-}
-
 const NewsPortal: React.FC = () => {
-    console.log('NewsPortal component loaded');
-
     // const navigate = useNavigate(); // Not needed anymore
     // States
     const [articles, setArticles] = useState<NewsArticle[]>([]);
@@ -906,12 +535,9 @@ const NewsPortal: React.FC = () => {
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
     const [category, setCategory] = useState('all');
     const [search, setSearch] = useState('');
-    const [fuzzySearch, setFuzzySearch] = useState(false); // Add fuzzy search state
-    const [loading, setLoading] = useState(false);
-    // Remove categories state since we'll use fixed categories
+    const [fuzzySearch, setFuzzySearch] = useState(false);
     const [isChatMinimized, setIsChatMinimized] = useState(true);
     const [isChatFullscreen, setIsChatFullscreen] = useState(false);
-    const [selectedSectionIndex, setSelectedSectionIndex] = useState<number>(0);
     const [availableDates, setAvailableDates] = useState<string[]>([]);
     const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
@@ -924,7 +550,6 @@ const NewsPortal: React.FC = () => {
     const [audioUnlocked, setAudioUnlocked] = useState(false);
     const [isProcessingAudio, setIsProcessingAudio] = useState(false);
 
-    // 在 NewsPortal 组件中添加新的状态
     const [summaryDate, setSummaryDate] = useState<string>('');
 
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -932,20 +557,14 @@ const NewsPortal: React.FC = () => {
     const carouselRef = useRef<HTMLDivElement>(null);
     const dateFilterRef = useRef<HTMLDivElement>(null);
 
-    // State definitions should be at the top of the component
-    const [canScrollLeft, setCanScrollLeft] = useState(false);
-    const [canScrollRight, setCanScrollRight] = useState(false);
-
-    // Add isMobile state
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
 
     // Prevent double-triggering on mobile
     const lastActionTime = useRef<number>(0);
     const touchStartTime = useRef<number>(0);
 
-    const handleResize = () => setIsMobile(window.innerWidth <= 600);
-
     useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 600);
         const checkMobile = () => {
             const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
             const mobile = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent.toLowerCase());
@@ -957,146 +576,67 @@ const NewsPortal: React.FC = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    useEffect(() => {
-        console.log('selectedGroupId changed:', selectedGroupId);
-    }, [selectedGroupId]);
-
-    // Update the NewsPortal.tsx to add debugging
-    // Find line 897 and replace it with:
-
-    console.log('=== API URL DEBUG ===');
-    console.log('process.env.REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
-    console.log('config.API_URL:', config.API_URL);
-    console.log('typeof process.env.REACT_APP_API_URL:', typeof process.env.REACT_APP_API_URL);
-    console.log('All REACT_APP env vars:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP')));
-
-    // Fix API URL - provide fallback for development
     const API_URL = config.API_URL;
     const STATIC_URL = config.STATIC_URL;
-    console.log('Final API_URL being used:', API_URL);
-    console.log('=== END DEBUG ===');
 
-
-    // Fixed categories - no longer need to fetch from API
     const fixedCategories = {
         social: 'Social',
         tech: 'Technology',
         entertainment: 'Entertainment'
     };
 
-    // Fetch articles on component mount and when filters change
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                await Promise.all([
-                    fetchArticles(),
-                    fetchDates(),
-                    fetchConfig()  // 添加配置获取
-                ]);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, [category, search, selectedDate, fuzzySearch]); // Add fuzzySearch to dependencies
-
-    // Auto-select first article when articles load (but only if no date is manually selected)
-    useEffect(() => {
-        console.log('Auto-selection useEffect triggered:', {
-            articlesLength: articles.length,
-            selectedGroupId,
-            selectedArticle: selectedArticle ? 'exists' : 'null',
-            selectedDate,
-            condition: articles.length > 0 && !selectedGroupId && !selectedArticle && !selectedDate
-        });
-
-        // Only auto-select if no date is manually selected and no article is already selected
-        if (articles.length > 0 && !selectedGroupId && !selectedArticle && !selectedDate) {
-            handleArticleSelect(articles[0]);
-        } else {
-            console.log('Auto-selection skipped:', {
-                reason: articles.length === 0 ? 'no articles' :
-                    selectedGroupId ? 'group already selected' :
-                        selectedArticle ? 'article already selected' :
-                            selectedDate ? 'date manually selected' : 'unknown'
-            });
-        }
-    }, [articles, selectedGroupId, selectedArticle, selectedDate]);
-
-    const fetchArticles = async () => {
+    const fetchConfig = useCallback(async () => {
         try {
-            console.log('Fetching articles with params:', {
-                category: category !== 'all' ? category : undefined,
-                search: search || undefined,
-                date: selectedDate || undefined,
-                fuzzy: fuzzySearch
-            });
+            const response = await axios.get(`${API_URL}/api/config/summary-date`);
+            setSummaryDate(response.data.date);
+        } catch (error) {
+            console.error('Error fetching config:', error);
+            setSummaryDate('2025-07-12');
+        }
+    }, [API_URL]);
 
+    const fetchDates = useCallback(async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/news/dates`);
+            setAvailableDates(response.data.dates || []);
+        } catch (error) {
+            console.error('Error fetching dates:', error);
+            setAvailableDates(['2025-06-14']);
+        }
+    }, [API_URL]);
+
+    const fetchArticles = useCallback(async () => {
+        try {
             const response = await axios.get(`${API_URL}/api/news`, {
                 params: {
                     category: category !== 'all' ? category : undefined,
                     search: search || undefined,
                     date: selectedDate || undefined,
-                    fuzzy: fuzzySearch // Add fuzzy parameter
+                    fuzzy: fuzzySearch
                 }
             });
 
-            console.log('Raw response data:', response.data);
-            console.log('Response data type:', typeof response.data);
-            console.log('Is array?', Array.isArray(response.data));
-
-            // Check if response.data has a 'news' property or is directly an array
             let articlesData;
             if (response.data && response.data.news) {
-                console.log('Using response.data.news');
                 articlesData = response.data.news;
             } else if (Array.isArray(response.data)) {
-                console.log('Using response.data directly (array)');
                 articlesData = response.data;
             } else {
-                console.log('Unexpected response format:', response.data);
                 articlesData = [];
             }
-
-            console.log('Final articles data:', articlesData);
-            console.log('Articles count:', articlesData.length);
 
             setArticles(articlesData);
         } catch (error) {
             console.error('Error fetching articles:', error);
             setArticles([]);
         }
-    };
+    }, [API_URL, category, search, selectedDate, fuzzySearch]);
 
-    // Remove fetchCategories function since we're using fixed categories
-
-    const fetchDates = async () => {
+    const fetchArticleDetail = useCallback(async (groupId: string, date: string) => {
         try {
-            const response = await axios.get(`${API_URL}/api/news/dates`); // Changed from /api/dates
-            setAvailableDates(response.data.dates || []);
-        } catch (error) {
-            console.error('Error fetching dates:', error);
-            setAvailableDates(['2025-06-14']); // fallback
-        }
-    };
-
-    const fetchArticleDetail = async (groupId: string, date: string) => {
-        try {
-            console.log('Fetching article detail for:', { groupId, date });
-            setLoading(true);
-
             const url = `${API_URL}/api/news/articles/${date}/${groupId}`;
-            console.log('Request URL:', url);
-
             const response = await axios.get(url);
-            console.log('Article detail response:', response.data);
-            console.log('Article detail response type:', typeof response.data);
-
             setSelectedArticle(response.data);
-            console.log('selectedArticle state updated');
         } catch (error: any) {
             console.error('Error fetching article detail:', error);
             console.error('Error details:', {
@@ -1105,43 +645,30 @@ const NewsPortal: React.FC = () => {
                 statusText: error?.response?.statusText,
                 data: error?.response?.data
             });
-        } finally {
-            setLoading(false);
-            console.log('Loading set to false');
         }
-    };
+    }, [API_URL]);
 
-    const handleArticleSelect = (article: NewsArticle) => {
-        console.log('Article selected:', article);
-        console.log('Setting selectedGroupId to:', article.group_id);
-        console.log('Setting selectedDate to:', article.date);
-
+    const handleArticleSelect = useCallback((article: NewsArticle) => {
         setSelectedGroupId(article.group_id);
-        // Don't override selectedDate if it's already set by user
         if (!selectedDate) {
             setSelectedDate(article.date);
         }
 
-        // Fetch article detail instead of navigating
-        console.log('Calling fetchArticleDetail...');
         fetchArticleDetail(article.group_id, article.date);
 
-        // Reset audio state
         setIsPlaying(false);
         setCurrentTime(0);
         setAudioError(false);
-        setAudioUnlocked(false); // Reset audio unlock state for new article
+        setAudioUnlocked(false);
 
-        // Check audio availability with range request (mobile-friendly)
         const audioUrl = `${STATIC_URL}/audio/${article.date}/${article.group_id}.mp3`;
         fetch(audioUrl, {
             method: 'GET',
             headers: {
-                'Range': 'bytes=0-1'  // Request only the first 2 bytes
+                'Range': 'bytes=0-1'
             }
         })
             .then(response => {
-                // Accept both 206 (Partial Content) and 200 (OK) as success
                 if (response.ok || response.status === 206) {
                     setAudioError(false);
                 } else {
@@ -1151,7 +678,28 @@ const NewsPortal: React.FC = () => {
             .catch(error => {
                 console.warn('NewsPortal: Audio availability check failed:', error);
             });
-    };
+    }, [selectedDate, fetchArticleDetail, STATIC_URL]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                await Promise.all([
+                    fetchArticles(),
+                    fetchDates(),
+                    fetchConfig()
+                ]);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+        fetchData();
+    }, [fetchArticles, fetchDates, fetchConfig]);
+
+    useEffect(() => {
+        if (articles.length > 0 && !selectedGroupId && !selectedArticle && !selectedDate) {
+            handleArticleSelect(articles[0]);
+        }
+    }, [articles, selectedGroupId, selectedArticle, selectedDate, handleArticleSelect]);
 
     const handleCategoryChange = (event: React.SyntheticEvent, newValue: string) => {
         setCategory(newValue);
@@ -1176,8 +724,6 @@ const NewsPortal: React.FC = () => {
         if (!audioRef.current || audioUnlocked) return;
 
         try {
-            console.log('🔓 NewsPortal: Attempting to unlock mobile audio...');
-
             // Create a short silent audio to unlock the audio context
             const audio = audioRef.current;
 
@@ -1195,7 +741,6 @@ const NewsPortal: React.FC = () => {
                     audio.currentTime = 0;
                     audio.volume = originalVolume;
                     setAudioUnlocked(true);
-                    console.log('NewsPortal: HTML5 Audio unlocked successfully');
                     return;
                 } catch (playError) {
                     console.warn('NewsPortal: HTML5 audio unlock failed:', playError);
@@ -1210,9 +755,7 @@ const NewsPortal: React.FC = () => {
 
                     // Check if AudioContext is suspended (common on iOS)
                     if (audioContext.state === 'suspended') {
-                        console.log('NewsPortal: AudioContext is suspended, attempting to resume...');
                         await audioContext.resume();
-                        console.log('NewsPortal: AudioContext resumed successfully');
                     }
 
                     // Create a short beep to unlock the audio pipeline
@@ -1237,7 +780,6 @@ const NewsPortal: React.FC = () => {
                     }, 100);
 
                     setAudioUnlocked(true);
-                    console.log('NewsPortal: AudioContext unlock completed');
                     return;
                 }
             } catch (contextError) {
@@ -1255,7 +797,6 @@ const NewsPortal: React.FC = () => {
                 }
 
                 setAudioUnlocked(true);
-                console.log('NewsPortal: Fallback audio unlock completed');
             } catch (fallbackError) {
                 console.warn('NewsPortal: Fallback audio unlock failed:', fallbackError);
             }
@@ -1270,7 +811,6 @@ const NewsPortal: React.FC = () => {
         // Prevent double-triggering on mobile devices
         const now = Date.now();
         if (now - lastActionTime.current < 300) { // 300ms debounce
-            console.log('NewsPortal: Action ignored - too soon after last action');
             return;
         }
         lastActionTime.current = now;
@@ -1278,12 +818,10 @@ const NewsPortal: React.FC = () => {
         if (!audioRef.current || audioError || !selectedGroupId || isProcessingAudio) return;
 
         setIsProcessingAudio(true);
-        console.log('NewsPortal: Play/Pause triggered. Mobile:', isMobile, 'Unlocked:', audioUnlocked);
 
         try {
             // On mobile, first interaction needs to unlock audio
             if (isMobile && !audioUnlocked) {
-                console.log('NewsPortal: Mobile unlock required...');
                 await unlockAudio();
 
                 // If unlock failed, don't proceed
@@ -1302,15 +840,11 @@ const NewsPortal: React.FC = () => {
             if (isPlaying) {
                 audioRef.current.pause();
                 setIsPlaying(false);
-                console.log('NewsPortal: Audio paused');
             } else {
-                console.log('NewsPortal: Attempting to play audio...');
-
                 // On iOS, ensure the audio element is ready
                 if (isMobile) {
                     // Load the audio if it's not already loaded
                     if (audioRef.current.readyState < 2) {
-                        console.log('NewsPortal: Loading audio data...');
                         audioRef.current.load();
 
                         // Wait for enough data to play
@@ -1350,7 +884,6 @@ const NewsPortal: React.FC = () => {
                     playPromise
                         .then(() => {
                             setIsPlaying(true);
-                            console.log('NewsPortal: Audio playing successfully');
                         })
                         .catch((error) => {
                             console.error('NewsPortal: Audio play failed:', error);
@@ -1370,7 +903,6 @@ const NewsPortal: React.FC = () => {
                         });
                 } else {
                     setIsPlaying(true);
-                    console.log('NewsPortal: Audio playing (no promise)');
                 }
             }
         } catch (error) {
@@ -1442,7 +974,7 @@ const NewsPortal: React.FC = () => {
             ];
 
             patterns.forEach(pattern => {
-                const regex = new RegExp(pattern.replace(/[\[\]]/g, '\\$&'), 'g');
+                const regex = new RegExp(pattern.replace(/[[\]]/g, '\\$&'), 'g');
                 processedContent = processedContent.replace(
                     regex,
                     `<a href="${source}" target="_blank" rel="noopener noreferrer" style="color: #00eaff; text-decoration: none; font-weight: 600; padding: 4px 8px; background: linear-gradient(45deg, rgba(0, 234, 255, 0.1), rgba(255, 106, 0, 0.05)); border: 1px solid rgba(0, 234, 255, 0.3); border-radius: 6px; transition: all 0.3s ease; display: inline-block; margin: 0 2px;" onmouseover="this.style.backgroundColor='rgba(0, 234, 255, 0.2)'; this.style.color='white'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(0, 234, 255, 0.3)'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#00eaff'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">[${index + 1}]</a>`
@@ -1457,11 +989,6 @@ const NewsPortal: React.FC = () => {
         if (!sources || sources.length === 0) {
             return null;
         }
-
-        const truncateUrl = (url: string, maxLength: number = 60) => {
-            if (url.length <= maxLength) return url;
-            return url.substring(0, maxLength) + '...';
-        };
 
         return (
             <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(0, 234, 255, 0.2)' }}>
@@ -1532,9 +1059,6 @@ const NewsPortal: React.FC = () => {
         );
     };
 
-    // Fix categories extraction - get unique values from the categories object
-    const uniqueCategories = Array.from(new Set(Object.values(fixedCategories))).filter(Boolean);
-
     const handleDateChange = (date: string) => {
 
         setSelectedDate(date);
@@ -1553,32 +1077,13 @@ const NewsPortal: React.FC = () => {
         setIsChatFullscreen(isFullscreen);
     };
 
-    // Add a useEffect to monitor selectedArticle changes
-    useEffect(() => {
-        if (selectedArticle) {
-            console.log('selectedArticle details:', {
-                headline: selectedArticle.headline,
-                group_id: selectedArticle.group_id,
-                date: selectedArticle.date,
-                bodyLength: selectedArticle.body?.length
-            });
-        }
-    }, [selectedArticle]);
-
-    // Add a useEffect to monitor selectedGroupId changes
-    useEffect(() => {
-        console.log('selectedGroupId changed:', selectedGroupId);
-    }, [selectedGroupId]);
-
     // Mobile touch event handlers for NewsPortal
     const handleTouchStart = (event: React.TouchEvent) => {
         touchStartTime.current = Date.now();
-        console.log('👆 NewsPortal: Touch start');
     };
 
     const handleTouchEnd = (event: React.TouchEvent) => {
         const touchDuration = Date.now() - touchStartTime.current;
-        console.log('👆 NewsPortal: Touch end, duration:', touchDuration);
 
         // Only handle touch end if it's a proper tap (not a long press or swipe)
         if (touchDuration < 1000 && touchDuration > 50) {
@@ -1597,18 +1102,6 @@ const NewsPortal: React.FC = () => {
     // Add fuzzy search toggle handler
     const handleFuzzySearchToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
         setFuzzySearch(event.target.checked);
-    };
-
-    // 新增：获取配置信息
-    const fetchConfig = async () => {
-        try {
-            const response = await axios.get(`${API_URL}/api/config/summary-date`);
-            setSummaryDate(response.data.date);
-            console.log('Summary date loaded:', response.data.date);
-        } catch (error) {
-            console.error('Error fetching config:', error);
-            setSummaryDate('2025-07-12'); // fallback
-        }
     };
 
     return (
@@ -2103,7 +1596,10 @@ const NewsPortal: React.FC = () => {
                                         </Typography>
                                     </Box>
 
-                                    <IconButton sx={{ color: isBookmarked ? '#ff6a00' : 'rgba(255, 255, 255, 0.5)' }}>
+                                    <IconButton
+                                        onClick={() => setIsBookmarked(!isBookmarked)}
+                                        sx={{ color: isBookmarked ? '#ff6a00' : 'rgba(255, 255, 255, 0.5)' }}
+                                    >
                                         <BookmarkBorder />
                                     </IconButton>
 
@@ -2594,7 +2090,7 @@ const NewsPortal: React.FC = () => {
                                 color: 'rgba(0, 234, 255, 0.5)',
                             },
                         }}>
-                            Made by HKU msp24053 • Built for the Future • &copy; 2025 AI News Sense
+                            Made by the LLM-NewsHub Project Team • Built for the Future • &copy; 2025 AI News Sense
                         </Typography>
                     </Box>
                 </Container>

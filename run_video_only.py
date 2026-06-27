@@ -1,4 +1,4 @@
-from pipeline.run import main
+from pipeline.run_video import main
 
 
 if __name__ == "__main__":

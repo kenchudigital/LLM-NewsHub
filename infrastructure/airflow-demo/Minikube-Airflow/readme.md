@@ -1,4 +1,12 @@
-# Airflow (Minikube)
+# Airflow on Minikube Experiment
+
+This note records the Kubernetes / Minikube Airflow exploration from the project development process. It is not required for the main GitHub showcase demo.
+
+For the maintained pipeline entrypoint, use:
+
+```bash
+python pipeline/run.py --date "2025-06-21"
+```
 
 [DOCUMENTATION LINK](https://airflow.apache.org/docs/apache-airflow/stable/howto/index.html)
 
@@ -6,32 +14,32 @@ Tutorial in Medium [LINK](!https://medium.com/@rupertarup/getting-started-with-a
 
 <details>
 
-<summary>⚠️ Caution</summary>
+<summary>Caution</summary>
 
 
 This procedure can be useful for learning and exploration. However, adapting it for use in real-world situations can be complicated and the docker compose file does not provide any security guarantees required for production system. Making changes to this procedure will require specialized expertise in Docker & Docker Compose, and the Airflow community may not be able to help you.
 
-For that reason, we recommend using ubernetes with the Official Airflow Community Helm Chart when you are ready to run Airflow in production.
+For that reason, use Kubernetes with the Official Airflow Community Helm Chart when you are ready to run Airflow in production.
 
 </details>
 
 <br>
 
-> Due to the above suggestion, I decide to set up `Kubernetes` locally and deploy Apache Airflow using `Helm`.
+> Due to the above suggestion, I decided to set up `Kubernetes` locally and deploy Apache Airflow using `Helm`.
 
-🫶 By the way, in this documentation, I mainly use `Mac` so, I will try my best to provide the instruction of `Window` but, if there is any issues in `Window`, please Google Search or ask ChatGPT to fix by yourself !
+This note was written and tested mainly on macOS. Windows or Linux users may need to adjust the installation commands.
 
 ##  A. Using Minikube
 
 ### STEP 1: PREPARE DOCKER
 
-I believe every has the `DOCKER` which is a cute 🐳 in your computer, right ?
+Install Docker before starting Minikube.
 
 
 ![DOCKER](../img/docker.jpg)
 
 
-If not, please follow the [LINK](!https://www.docker.com/get-started/) to install your cute  !
+If Docker is not installed, follow the [Docker installation guide](!https://www.docker.com/get-started/).
 
 ### STEP 2: INSTALL
 
@@ -51,7 +59,7 @@ minikube --help # see the flag
 
 <details>
 
-<summary>⚠️ M1 & M2 POTENIAL ISSUE </summary>
+<summary>M1 & M2 Potential Issue</summary>
 
 <br>
 
@@ -112,9 +120,9 @@ minikube tunnel
 
 You should see the below results:
 
-✅  Tunnel successfully started
+Tunnel successfully started
 
-📌  NOTE: Please do not close this terminal as this process must stay alive for the tunnel to be accessible ...
+NOTE: Please do not close this terminal as this process must stay alive for the tunnel to be accessible.
 
 
 <details>

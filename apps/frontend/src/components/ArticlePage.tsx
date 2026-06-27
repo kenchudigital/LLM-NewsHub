@@ -1,5 +1,5 @@
 import config from '../config';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Box,
     Container,
@@ -7,18 +7,12 @@ import {
     Paper,
     Chip,
     IconButton,
-    Button,
     Divider,
     Link,
     Card,
-    CardContent,
     LinearProgress,
     Tooltip,
     Grid,
-    Avatar,
-    Collapse,
-    Fade,
-    Zoom,
 } from '@mui/material';
 import {
     PlayArrow,
@@ -28,14 +22,10 @@ import {
     BookmarkBorder,
     Bookmark,
     ThumbUp,
-    ThumbDown,
     Schedule,
     LocationOn,
-    TrendingUp,
     Warning,
     Business,
-    ExpandMore,
-    ExpandLess,
     Info,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
@@ -187,119 +177,6 @@ const SourceLink = styled(Link)(({ theme }) => ({
 }));
 
 
-const MetaToggle = styled(IconButton)(({ theme }) => ({
-    position: 'absolute',
-    right: '8px',
-    top: '8px',
-    color: 'rgba(0, 234, 255, 0.8)',
-    padding: '4px',
-    transition: 'all 0.3s ease',
-    '&:hover': {
-        color: '#00eaff',
-        transform: 'scale(1.1)',
-    }
-}));
-
-const MetaInfo = styled(Paper)(({ theme }) => ({
-    position: 'relative',
-    marginBottom: '2rem',
-    padding: '0.5rem',
-    background: 'linear-gradient(135deg, rgba(13, 13, 13, 0.95) 0%, rgba(26, 26, 46, 0.9) 100%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(0, 234, 255, 0.2)',
-    boxShadow: '0 4px 20px rgba(0, 234, 255, 0.1)',
-    overflow: 'hidden',
-    transition: 'all 0.3s ease',
-    maxWidth: '100%', // Add this
-    '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '2px',
-        background: 'linear-gradient(90deg, transparent, rgba(0, 234, 255, 0.5), transparent)',
-    }
-}));
-
-const MetaContent = styled(Box, {
-    shouldForwardProp: (prop) => prop !== 'expanded',
-})<{ expanded: boolean }>(({ theme, expanded }) => ({
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.5rem',
-    transition: 'all 0.3s ease',
-    overflowX: 'auto',
-    whiteSpace: 'nowrap',
-    width: '100%',
-    maxWidth: '100%',
-    minHeight: expanded ? 'auto' : '0',
-    '&::-webkit-scrollbar': {
-        height: '4px',
-    },
-    '&::-webkit-scrollbar-track': {
-        background: 'rgba(0, 234, 255, 0.1)',
-        borderRadius: '2px',
-    },
-    '&::-webkit-scrollbar-thumb': {
-        background: 'rgba(0, 234, 255, 0.3)',
-        borderRadius: '2px',
-        '&:hover': {
-            background: 'rgba(0, 234, 255, 0.5)',
-        },
-    },
-    '& > *': {
-        flexShrink: 0,
-        flex: '0 0 auto', // Ensure items don't grow
-    }
-}));
-
-const MetaItem = styled(Box)(({ theme }) => ({
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem 1rem',
-    background: 'rgba(0, 234, 255, 0.1)',
-    borderRadius: '20px',
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: '0.9rem',
-    border: '1px solid rgba(0, 234, 255, 0.2)',
-    transition: 'all 0.3s ease',
-    '&:hover': {
-        background: 'rgba(0, 234, 255, 0.15)',
-        borderColor: 'rgba(0, 234, 255, 0.3)',
-    },
-    '& svg': {
-        color: '#00eaff',
-    }
-}));
-
-const SentimentIndicator = styled(Box)<{ sentiment: number }>(({ theme, sentiment }) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem 1rem',
-    borderRadius: '20px',
-    fontSize: '0.9rem',
-    fontWeight: 500,
-    background: sentiment > 0 ? '#d4edda' : sentiment < -0.5 ? '#f8d7da' : '#fff3cd',
-    color: sentiment > 0 ? '#155724' : sentiment < -0.5 ? '#721c24' : '#856404',
-}));
-
-const FakeNewsIndicator = styled(Box)<{ probability: number }>(({ theme, probability }) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem 1rem',
-    borderRadius: '20px',
-    fontSize: '0.9rem',
-    fontWeight: 500,
-    background: probability > 0.7 ? '#f8d7da' : probability > 0.4 ? '#fff3cd' : '#d4edda',
-    color: probability > 0.7 ? '#721c24' : probability > 0.4 ? '#856404' : '#155724',
-}));
-
 const SectionContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
     gap: '2rem',
@@ -321,25 +198,6 @@ const SectionContent = styled(Box)(({ theme }) => ({
     maxWidth: 'calc(100% - 300px)',
     [theme.breakpoints.down('lg')]: {
         maxWidth: '100%',
-    }
-}));
-
-const SectionSidebar = styled(Box)(({ theme }) => ({
-    width: '280px',
-    flexShrink: 0,
-    padding: '1rem',
-    background: 'linear-gradient(135deg, rgba(13, 13, 13, 0.95) 0%, rgba(26, 26, 46, 0.9) 100%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(0, 234, 255, 0.2)',
-    boxShadow: '0 4px 20px rgba(0, 234, 255, 0.1)',
-    height: 'fit-content',
-    position: 'sticky',
-    top: '100px',
-    zIndex: 2,
-    [theme.breakpoints.down('lg')]: {
-        width: '100%',
-        position: 'static',
-        marginTop: '1rem',
     }
 }));
 
@@ -450,13 +308,11 @@ const ArticlePage: React.FC = () => {
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [sourceRefs, setSourceRefs] = useState<Record<string, number>>({});
     const audioRef = useRef<HTMLAudioElement>(null);
-    const [audioAvailable, setAudioAvailable] = useState(true);
     const [audioError, setAudioError] = useState(false);
-    const [expandedMeta, setExpandedMeta] = useState(false);
     const [audioUnlocked, setAudioUnlocked] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [isProcessingAudio, setIsProcessingAudio] = useState(false);
-    const API_URL = config.API_URL || 'http://localhost:8000';
+    const API_URL = config.API_URL;
     const STATIC_URL = `${API_URL}/static`;
 
     // Prevent double-triggering on mobile
@@ -476,38 +332,9 @@ const ArticlePage: React.FC = () => {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    useEffect(() => {
-        if (groupId && date) {
-            fetchArticle();
+    const fetchArticle = useCallback(async () => {
+        if (!groupId || !date) return;
 
-            // Always show audio bar, but check availability for functionality
-            setAudioAvailable(true); // Always show the bar
-
-            // Check audio availability with range request (mobile-friendly)
-            const audioUrl = `${STATIC_URL}/audio/${date}/${groupId}.mp3`;
-
-            fetch(audioUrl, {
-                method: 'GET',
-                headers: {
-                    'Range': 'bytes=0-1'  // Request only the first 2 bytes
-                }
-            })
-                .then(response => {
-                    // Accept both 206 (Partial Content) and 200 (OK) as success
-                    if (response.ok || response.status === 206) {
-                        setAudioError(false);
-                    } else {
-                        setAudioError(true);
-                    }
-                })
-                .catch(error => {
-                    // Don't set audio error here - let the audio element handle it
-                    // This prevents false negatives on mobile networks
-                });
-        }
-    }, [groupId, date]);
-
-    const fetchArticle = async () => {
         try {
             setLoading(true);
             const response = await axios.get(
@@ -515,7 +342,6 @@ const ArticlePage: React.FC = () => {
             );
             setArticle(response.data);
 
-            // Create source reference mapping
             const refs: Record<string, number> = {};
             let refCount = 1;
             response.data.body.forEach((section: any) => {
@@ -532,7 +358,32 @@ const ArticlePage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [API_URL, date, groupId]);
+
+    useEffect(() => {
+        if (groupId && date) {
+            fetchArticle();
+
+            const audioUrl = `${STATIC_URL}/audio/${date}/${groupId}.mp3`;
+
+            fetch(audioUrl, {
+                method: 'GET',
+                headers: {
+                    'Range': 'bytes=0-1'
+                }
+            })
+                .then(response => {
+                    if (response.ok || response.status === 206) {
+                        setAudioError(false);
+                    } else {
+                        setAudioError(true);
+                    }
+                })
+                .catch(() => {
+                    // Let the audio element handle load errors on mobile networks
+                });
+        }
+    }, [groupId, date, fetchArticle, STATIC_URL]);
 
     // Mobile audio unlock function
     const unlockAudio = async () => {
@@ -614,10 +465,6 @@ const ArticlePage: React.FC = () => {
 
             // Method 4: Fallback - try to create a user-initiated audio buffer
             try {
-                const arrayBuffer = new ArrayBuffer(44100 * 0.1 * 2); // 0.1 second of silence
-                const audioBuffer = new Float32Array(arrayBuffer);
-
-                // Try to decode and play silence
                 if ('webkitAudioContext' in window) {
                     const context = new (window as any).webkitAudioContext();
                     if (context.state === 'suspended') {
@@ -788,15 +635,6 @@ const ArticlePage: React.FC = () => {
         return processedContent;
     };
 
-    const calculateRegionDiversityScore = (regions: string[]): string => {
-        const uniqueRegions = new Set(regions);
-        const diversityCount = uniqueRegions.size;
-
-        if (diversityCount >= 4) return 'High';
-        if (diversityCount >= 2) return 'Medium';
-        return 'Low';
-    };
-
     const handleSourceClick = (source: string) => {
         window.open(source, '_blank', 'noopener,noreferrer');
     };
@@ -817,12 +655,10 @@ const ArticlePage: React.FC = () => {
 
         setAudioError(true);
         setIsPlaying(false);
-        // Keep audioAvailable true so bar stays visible
     };
 
     const handleAudioLoaded = () => {
         setAudioError(false);
-        setAudioAvailable(true);
     };
 
     // Handle audio events specific to mobile
@@ -843,10 +679,6 @@ const ArticlePage: React.FC = () => {
     const handleAudioEnded = () => {
         setIsPlaying(false);
         setCurrentTime(0);
-    };
-
-    const toggleMeta = () => {
-        setExpandedMeta(!expandedMeta);
     };
 
     // Mobile touch event handlers

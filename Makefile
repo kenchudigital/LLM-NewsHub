@@ -6,7 +6,7 @@
 # Install production dependencies
 install:
 	@echo "Installing production dependencies..."
-	pip install -r requirements-adjusted.txt
+	pip install -r requirements.txt
 	@echo "Dependencies installed successfully!"
 
 # Install development dependencies
@@ -50,7 +50,7 @@ run-all:
 	@echo "Running main data processing pipeline..."
 	conda run -n llm-news python run_all.py --date "2025-07-22"
 	@echo "Running video generation in llm-news-video environment..."
-	conda run -n llm-news-video python run_all2.py --date "2025-07-22"
+	conda run -n llm-news-video python run_video_only.py --date "2025-07-22"
 	@echo "Pipeline completed!"
 
 # Model training commands

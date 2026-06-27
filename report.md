@@ -19,7 +19,7 @@ SVC Performance: Best accuracy: 97.99% (0.9798657718120806); Mean accuracy: 97.8
 KNN Performance: Best accuracy: 96.64% (0.9664429530201343); Mean accuracy: 96.23% (0.9622641509433965); CV stability: 96.68% (0.9667871229080056)
 ```
 
-![Img](z-img/0-category-classifier-knn-vs-svc.png)
+![Img](source/0-category-classifier-knn-vs-svc.png)
 
 - Reason: TD-IDF: transforming text into meaningful numerical features; SVC: Margin Maximization Principle, More Robust, good for the high noise data compared to KNN.
 
@@ -101,7 +101,7 @@ Generated Content Schema can also see in the prompt !
 os.system(f"python deployment/image/main.py --date {today}")
 os.system(f"python deployment/audio/main.py --date {today}")
 os.system(f"python migrate.py --date {today}")
-os.system(f"bash alibaba-cloud/execute.bash")
+os.system(f"bash infrastructure/alibaba-cloud/execute.bash")
 ```
 
 Description: For deployment, 
@@ -139,9 +139,9 @@ However, you need to manually to adjust the knowledge graph data in this file !
 
 After that upload it to the Alibaba Cloud !
 
-![Img](z-img/kg-demo.png)
+![Img](source/kg-demo.png)
 
 AND
 
-![Img](z-img/kg-demo2.png)
+![Img](source/kg-demo2.png)
 

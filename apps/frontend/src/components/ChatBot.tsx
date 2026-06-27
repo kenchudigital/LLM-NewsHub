@@ -1,5 +1,5 @@
 import config from '../config';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Box,
     Paper,
@@ -15,13 +15,9 @@ import {
     Menu,
     MenuItem,
     ListItemIcon,
-    Select,
-    FormControl,
-    InputLabel,
 } from '@mui/material';
 import {
     Send as SendIcon,
-    Article as ArticleIcon,
     Memory as MemoryIcon,
     BarChart as ChartIcon,
     AutoAwesome,
@@ -269,14 +265,6 @@ interface ChatBotProps {
     onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
-interface PendingRequest {
-    id: string;
-    userMessage: Message;
-    timestamp: Date;
-    context: any;
-    model: string;
-}
-
 const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullscreenChange }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -287,7 +275,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
     const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const backgroundProcessingInterval = useRef<NodeJS.Timeout | null>(null);
 
     // Fix API URL - use config.API_URL (empty for proxy) instead of localhost fallback
     const API_URL = config.API_URL;
@@ -304,15 +291,15 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
     };
 
     // LocalStorage utility functions
-    const getStorageKey = (key: string) => `chatbot_${userIP}_${key}`;
+    const getStorageKey = useCallback((key: string) => `chatbot_${userIP}_${key}`, [userIP]);
 
-    const saveConversation = (messages: Message[]) => {
+    const saveConversation = useCallback((messages: Message[]) => {
         if (userIP) {
             localStorage.setItem(getStorageKey('conversation'), JSON.stringify(messages));
         }
-    };
+    }, [userIP, getStorageKey]);
 
-    const loadConversation = (): Message[] => {
+    const loadConversation = useCallback((): Message[] => {
         if (userIP) {
             const saved = localStorage.getItem(getStorageKey('conversation'));
             if (saved) {
@@ -328,15 +315,15 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
             }
         }
         return [];
-    };
+    }, [userIP, getStorageKey]);
 
-    const saveSelectedModel = (model: typeof DEFAULT_MODEL) => {
+    const saveSelectedModel = useCallback((model: typeof DEFAULT_MODEL) => {
         if (userIP) {
             localStorage.setItem(getStorageKey('selectedModel'), JSON.stringify(model));
         }
-    };
+    }, [userIP, getStorageKey]);
 
-    const loadSelectedModel = (): typeof DEFAULT_MODEL => {
+    const loadSelectedModel = useCallback((): typeof DEFAULT_MODEL => {
         if (userIP) {
             const saved = localStorage.getItem(getStorageKey('selectedModel'));
             if (saved) {
@@ -348,7 +335,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
             }
         }
         return DEFAULT_MODEL;
-    };
+    }, [userIP, getStorageKey]);
 
     // Initialize IP and load data
     useEffect(() => {
@@ -385,21 +372,21 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
 
             setSelectedModel(savedModel);
         }
-    }, [userIP]);
+    }, [userIP, loadConversation, loadSelectedModel]);
 
     // Save conversation whenever messages change
     useEffect(() => {
         if (userIP && messages.length > 0) {
             saveConversation(messages);
         }
-    }, [messages, userIP]);
+    }, [messages, userIP, saveConversation]);
 
     // Save model whenever it changes
     useEffect(() => {
         if (userIP && selectedModel) {
             saveSelectedModel(selectedModel);
         }
-    }, [selectedModel, userIP]);
+    }, [selectedModel, userIP, saveSelectedModel]);
 
     // Auto-scroll to bottom when new messages arrive
     const scrollToBottom = () => {
@@ -426,7 +413,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
     }, [currentGroupId, currentDate]);
 
     const handleSend = async () => {
-        console.log('handleSend called at:', new Date().toISOString());
         if (!input.trim()) return;
 
         const userMessage: Message = {
@@ -444,7 +430,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
         setIsLoading(true);
 
         try {
-            console.log('Making API call...');
             const response = await axios.post(`${API_URL}/api/chat`, {
                 message: userInput,
                 model: selectedModel.id,
@@ -455,7 +440,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
                 },
             });
 
-            console.log('API response received:', response.data);
             let botResponseText = response.data.response;
             let chartGenerated = false;
             let analysisGenerated = false;
@@ -486,7 +470,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ currentGroupId, currentDate, onFullsc
             setConversationMemory(prev => [...prev.slice(-3), response.data.response]);
 
         } catch (error) {
-            console.log('API error:', error);
             console.error('Error sending message:', error);
 
             let errorMessage = 'Sorry, I encountered an error. Please try again.';

@@ -1,9 +1,10 @@
 # Alibaba Cloud Container Registry
-REGISTRY = msp24053-registry.cn-hongkong.cr.aliyuncs.com
-PROJECT = fyp-demo
+REGISTRY ?= registry.example.com
+PROJECT ?= llm-newshub
 BACKEND_IMAGE = $(REGISTRY)/$(PROJECT)/newsense-backend
 FRONTEND_IMAGE = $(REGISTRY)/$(PROJECT)/newsense-frontend
 TAG = latest
+REACT_APP_API_URL ?= http://localhost:8000
 
 # Build platforms
 PLATFORM = linux/amd64
@@ -41,7 +42,7 @@ build-backend:
 build-frontend:
 	@echo "Building frontend image..."
 	docker buildx build --platform $(PLATFORM) \
-		--build-arg REACT_APP_API_URL=http://msp24053-registry-vpc.cn-hongkong.cr.aliyuncs.com/fyp-demo/newsense-backend:8000 \
+		--build-arg REACT_APP_API_URL=$(REACT_APP_API_URL) \
 		-t $(FRONTEND_IMAGE):$(TAG) \
 		./frontend
 

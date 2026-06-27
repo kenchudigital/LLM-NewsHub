@@ -127,13 +127,12 @@ const NewsSection: React.FC<NewsWithDetailProps> = ({ onArticleSelect, onChartAd
     const [charts, setCharts] = useState<ChartData[]>([]);
     const articlesPerPage = 3;
     const navigate = useNavigate();
-    const API_URL = config.API_URL || 'http://localhost:8000';
+    const API_URL = config.API_URL;
     const STATIC_URL = `${API_URL}/static`;
 
     useEffect(() => {
         const fetchArticles = async () => {
             try {
-                console.log('Fetching articles in NewsSection...');
                 const response = await axios.get(`${API_URL}/api/news`, {
                     params: {
                         category: category !== 'all' ? category : undefined,
@@ -141,7 +140,6 @@ const NewsSection: React.FC<NewsWithDetailProps> = ({ onArticleSelect, onChartAd
                         fuzzy: fuzzySearch // Add fuzzy parameter
                     },
                 });
-                console.log('Articles response in NewsSection:', response.data);
                 setArticles(response.data.news || []);
 
                 // Auto-select first article if none selected
@@ -161,7 +159,7 @@ const NewsSection: React.FC<NewsWithDetailProps> = ({ onArticleSelect, onChartAd
         try {
             setLoading(true);
             const response = await axios.get(
-                `${API_URL}/api/articles/${date}/${groupId}`
+                `${API_URL}/api/news/articles/${date}/${groupId}`
             );
             setSelectedArticle(response.data);
         } catch (error) {

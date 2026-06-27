@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from airflow.sensors.filesystem import FileSensor
 
 default_args = {
-    'owner': 'kenchu',
+    'owner': 'llm-newshub',
     'start_date': datetime(2024, 8, 1),
     'retries': 1,
 }

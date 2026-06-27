@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    image: msp24053-registry-vpc.cn-hongkong.cr.aliyuncs.com/fyp-demo/newsense-backend
+    image: ${ALIYUN_REGISTRY:-registry.example.com}/${ALIYUN_NAMESPACE:-llm-newshub}/${ALIYUN_BACKEND_IMAGE:-newsense-backend}:latest
     ports:
       - "8000:8000"
     environment:
@@ -20,14 +20,14 @@ services:
       retries: 3
 
   frontend:
-    image: msp24053-registry.cn-hongkong.cr.aliyuncs.com/fyp-demo/newsense-frontend
+    image: ${ALIYUN_REGISTRY:-registry.example.com}/${ALIYUN_NAMESPACE:-llm-newshub}/${ALIYUN_FRONTEND_IMAGE:-newsense-frontend}:latest
     ports:
       - "3000:80"
     depends_on:
       - backend
     restart: unless-stopped
     environment:
-      - REACT_APP_API_URL=http://msp24053-registry-vpc.cn-hongkong.cr.aliyuncs.com/fyp-demo/newsense-backend:8000
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s

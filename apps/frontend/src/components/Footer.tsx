@@ -35,7 +35,7 @@ const Footer: React.FC = () => {
                     },
                 }}
             >
-                made by HKU msp24053
+                Made by the LLM-NewsHub Project Team
             </Typography>
         </Box>
     );

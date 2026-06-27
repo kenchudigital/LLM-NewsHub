@@ -23,7 +23,7 @@ services:
     build:
       context: frontend
       args:
-        - REACT_APP_API_URL=http://example.com:8000
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://example.com:8000}
     ports:
       - "3000:80"
     depends_on:
